@@ -1,0 +1,45 @@
+name: benchmark (manual)
+
+# Optional, on-demand full run. NOTE: GitHub-hosted runners are shared and noisy, so
+# timing numbers from here are less trustworthy than a local run on dedicated hardware.
+# The authoritative published results in docs/ come from local runs committed by a maintainer.
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'BenchmarkDotNet filter glob'
+        required: false
+        default: '*'
+      job:
+        description: "Job (blank = full default; 'short' for a faster run)"
+        required: false
+        default: 'short'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install native deps
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1
+
+      - name: Run benchmarks
+        run: |
+          ARGS="--filter ${{ github.event.inputs.filter }}"
+          if [ -n "${{ github.event.inputs.job }}" ]; then ARGS="$ARGS --job ${{ github.event.inputs.job }}"; fi
+          dotnet run -c Release --project src/XLBench -- $ARGS
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: xlbench-results
+          path: |
+            docs/results.md
+            BenchmarkDotNet.Artifacts/results/**

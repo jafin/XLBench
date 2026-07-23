@@ -1,0 +1,30 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # XLibur's SkiaSharp font engine needs fontconfig at runtime on Linux.
+      - name: Install native deps
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1
+
+      - name: Build (Release)
+        run: dotnet build src/XLBench/XLBench.csproj -c Release
+
+      # Validation only: a Dry run proves every benchmark still compiles and executes.
+      # It produces no trustworthy numbers (published results come from local runs).
+      - name: Smoke-run write benchmarks (Dry)
+        run: dotnet run -c Release --project src/XLBench --no-build -- --filter '*Write*' --job Dry
