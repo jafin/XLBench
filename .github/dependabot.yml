@@ -1,0 +1,38 @@
+# Dependabot keeps dependencies current by opening update PRs, which the build workflow
+# validates automatically. Version updates are enabled by the presence of this file.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+
+updates:
+  # NuGet packages — the Excel libraries under test plus BenchmarkDotNet and tooling.
+  # Directory "/" scans the whole repo, covering src/XLBench and tools/ChartGen.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+    groups:
+      # Low-risk minor/patch bumps share one PR to cut noise; majors come as their own
+      # PR so a potentially breaking update gets individual attention (and its own
+      # benchmark comparison). Remove this group for one PR per package.
+      nuget-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Actions pinned in the workflows (actions/checkout, actions/setup-dotnet, ...).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"
