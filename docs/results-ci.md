@@ -40,10 +40,62 @@ config:
     showDataLabel: true
 ---
 xychart-beta
-    title "Write · create + save — time (ms)"
-    x-axis ["MiniExcel", "OpenXML SDK", "ClosedXML", "XLibur", "EPPlus", "NPOI"]
+    title "Read · open workbook — time (ms)"
+    x-axis ["NPOI", "EPPlus", "XLibur", "ClosedXML"]
     y-axis "Time (ms)"
-    bar [42.21, 113.11, 299.58, 307.49, 362.61, 595.84]
+    bar [334.13, 2300.59, 3396.35, 4519.89]
+```
+
+```mermaid
+---
+config:
+  xyChart:
+    showDataLabel: true
+---
+xychart-beta
+    title "Read · open workbook — allocated (MB)"
+    x-axis ["NPOI", "XLibur", "EPPlus", "ClosedXML"]
+    y-axis "Allocated (MB)"
+    bar [211.34, 947.64, 1038.9, 1304.39]
+```
+
+```mermaid
+---
+config:
+  xyChart:
+    showDataLabel: true
+---
+xychart-beta
+    title "Read · open + read all cells — time (ms)"
+    x-axis ["EPPlus", "MiniExcel", "OpenXML SDK", "XLibur", "NPOI", "ClosedXML"]
+    y-axis "Time (ms)"
+    bar [3139.73, 3219.8, 3360.64, 4392.49, 6848.66, 28628.42]
+```
+
+```mermaid
+---
+config:
+  xyChart:
+    showDataLabel: true
+---
+xychart-beta
+    title "Read · open + read all cells — allocated (MB)"
+    x-axis ["OpenXML SDK", "MiniExcel", "XLibur", "EPPlus", "NPOI", "ClosedXML"]
+    y-axis "Allocated (MB)"
+    bar [1253.31, 1348.65, 1431.29, 1851.96, 2157.09, 2158.27]
+```
+
+```mermaid
+---
+config:
+  xyChart:
+    showDataLabel: true
+---
+xychart-beta
+    title "Write · create + save — time (ms)"
+    x-axis ["MiniExcel", "OpenXML SDK", "XLibur", "ClosedXML", "EPPlus", "NPOI"]
+    y-axis "Time (ms)"
+    bar [80.18, 218.16, 362.85, 522.03, 619.88, 869.69]
 ```
 
 ```mermaid
@@ -56,7 +108,7 @@ xychart-beta
     title "Write · create + save — allocated (MB)"
     x-axis ["MiniExcel", "XLibur", "OpenXML SDK", "ClosedXML", "NPOI", "EPPlus"]
     y-axis "Allocated (MB)"
-    bar [84.59, 131.12, 134.19, 181.1, 247.27, 322.57]
+    bar [84.59, 131.12, 134.19, 181.09, 247.27, 322.57]
 ```
 
 ## Detailed results
@@ -65,26 +117,46 @@ xychart-beta
 ```
 
 BenchmarkDotNet v0.15.8, Linux Ubuntu 24.04.4 LTS (Noble Numbat)
-AMD EPYC 9V45 4.43GHz, 1 CPU, 4 logical and 2 physical cores
+AMD EPYC 7763 3.19GHz, 1 CPU, 4 logical and 2 physical cores
 .NET SDK 10.0.302
-  [Host]   : .NET 10.0.10 (10.0.10, 10.0.1026.32716), X64 RyuJIT x86-64-v4
-  ShortRun : .NET 10.0.10 (10.0.10, 10.0.1026.32716), X64 RyuJIT x86-64-v4
+  [Host]   : .NET 10.0.10 (10.0.10, 10.0.1026.32716), X64 RyuJIT x86-64-v3
+  ShortRun : .NET 10.0.10 (10.0.10, 10.0.1026.32716), X64 RyuJIT x86-64-v3
 
 Job=ShortRun  IterationCount=3  LaunchCount=1  
 WarmupCount=3  
 
 ```
 
+### Read · open workbook
+
+| Library     | Type                     | Method         | Mean         | Error         | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|--------------:|-----------:|------------:|------------:|----------:|-----------:|
+| NPOI        | NpoiReadBenchmarks       | OpenWorkbook   |    334.13 ms |    154.808 ms |   8.486 ms |   3000.0000 |   2000.0000 | 1000.0000 |  211.34 MB |
+| EPPlus      | EpPlusReadBenchmarks     | OpenWorkbook   |  2,300.59 ms |     88.705 ms |   4.862 ms |  41000.0000 |  17000.0000 | 7000.0000 |  1038.9 MB |
+| XLibur      | XLiburReadBenchmarks     | OpenWorkbook   |  3,396.35 ms |    268.669 ms |  14.727 ms |  61000.0000 |  20000.0000 | 3000.0000 |  947.64 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks  | OpenWorkbook   |  4,519.89 ms |    466.882 ms |  25.591 ms |  81000.0000 |  26000.0000 | 3000.0000 | 1304.39 MB |
+
+### Read · open + read all cells
+
+| Library     | Type                     | Method         | Mean         | Error         | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|--------------:|-----------:|------------:|------------:|----------:|-----------:|
+| EPPlus      | EpPlusReadBenchmarks     | OpenAndReadAll |  3,139.73 ms |    109.377 ms |   5.995 ms |  92000.0000 |  18000.0000 | 7000.0000 | 1851.96 MB |
+| MiniExcel   | MiniExcelReadBenchmarks  | OpenAndReadAll |  3,219.80 ms |    331.833 ms |  18.189 ms |  84000.0000 |   1000.0000 |         - | 1348.65 MB |
+| OpenXML SDK | OpenXmlReadBenchmarks    | OpenAndReadAll |  3,360.64 ms |     72.310 ms |   3.964 ms |  80000.0000 |  10000.0000 | 2000.0000 | 1253.31 MB |
+| XLibur      | XLiburReadBenchmarks     | OpenAndReadAll |  4,392.49 ms |    640.768 ms |  35.123 ms |  78000.0000 |  30000.0000 | 4000.0000 | 1431.29 MB |
+| NPOI        | NpoiReadBenchmarks       | OpenAndReadAll |  6,848.66 ms | 10,156.160 ms | 556.693 ms | 130000.0000 | 120000.0000 | 7000.0000 | 2157.09 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks  | OpenAndReadAll | 28,628.42 ms |    249.123 ms |  13.655 ms | 118000.0000 |  45000.0000 | 5000.0000 | 2158.27 MB |
+
 ### Write · create + save
 
-| Library     | Type                     | Method        | Mean      | Error      | StdDev    | Gen0       | Gen1       | Gen2      | Allocated |
-|------------ |------------------------- |-------------- |----------:|-----------:|----------:|-----------:|-----------:|----------:|----------:|
-| MiniExcel   | MiniExcelWriteBenchmarks | CreateAndSave |  42.21 ms |   1.764 ms |  0.097 ms |  5250.0000 |  1250.0000 | 1166.6667 |  84.59 MB |
-| OpenXML SDK | OpenXmlWriteBenchmarks   | CreateAndSave | 113.11 ms |  29.786 ms |  1.633 ms |  8600.0000 |  2000.0000 | 2000.0000 | 134.19 MB |
-| ClosedXML   | ClosedXmlWriteBenchmarks | CreateAndSave | 299.58 ms |  70.147 ms |  3.845 ms | 11000.0000 |  6000.0000 | 3000.0000 |  181.1 MB |
-| XLibur      | XLiburWriteBenchmarks    | CreateAndSave | 307.49 ms | 385.450 ms | 21.128 ms |  7000.0000 |  3000.0000 | 2000.0000 | 131.12 MB |
-| EPPlus      | EpPlusWriteBenchmarks    | CreateAndSave | 362.61 ms |  77.875 ms |  4.269 ms | 20000.0000 |  9000.0000 | 3000.0000 | 322.57 MB |
-| NPOI        | NpoiWriteBenchmarks      | CreateAndSave | 595.84 ms |  80.685 ms |  4.423 ms | 16000.0000 | 12000.0000 | 3000.0000 | 247.27 MB |
+| Library     | Type                     | Method         | Mean         | Error         | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|--------------:|-----------:|------------:|------------:|----------:|-----------:|
+| MiniExcel   | MiniExcelWriteBenchmarks | CreateAndSave  |     80.18 ms |      4.869 ms |   0.267 ms |   5142.8571 |   1285.7143 | 1142.8571 |   84.59 MB |
+| OpenXML SDK | OpenXmlWriteBenchmarks   | CreateAndSave  |    218.16 ms |     13.556 ms |   0.743 ms |   9000.0000 |   2333.3333 | 2333.3333 |  134.19 MB |
+| XLibur      | XLiburWriteBenchmarks    | CreateAndSave  |    362.85 ms |     79.709 ms |   4.369 ms |   7000.0000 |   3000.0000 | 2000.0000 |  131.12 MB |
+| ClosedXML   | ClosedXmlWriteBenchmarks | CreateAndSave  |    522.03 ms |     34.403 ms |   1.886 ms |  11000.0000 |   6000.0000 | 3000.0000 |  181.09 MB |
+| EPPlus      | EpPlusWriteBenchmarks    | CreateAndSave  |    619.88 ms |     60.462 ms |   3.314 ms |  20000.0000 |   9000.0000 | 3000.0000 |  322.57 MB |
+| NPOI        | NpoiWriteBenchmarks      | CreateAndSave  |    869.69 ms |    150.365 ms |   8.242 ms |  16000.0000 |  12000.0000 | 3000.0000 |  247.27 MB |
 
 
 
