@@ -14,7 +14,7 @@ columns as the most portable signal across machines. Regenerate locally with
 
 📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.
 
-On the Pages site the results table is heat-mapped per scenario (🟩 best → 🟥 worst).
+Each results table (one per test method) is heat-mapped independently on the Pages site (🟩 best → 🟥 worst).
 
 ## Libraries under test
 
@@ -41,7 +41,7 @@ xychart-beta
     title "Read · open workbook — time (ms)"
     x-axis ["NPOI", "EPPlus", "XLibur", "ClosedXML"]
     y-axis "Time (ms)"
-    bar [635.99, 3532.64, 5116.98, 7222.28]
+    bar [272.68, 1694.42, 2513.02, 3460.56]
 ```
 
 ```mermaid
@@ -54,7 +54,7 @@ xychart-beta
     title "Read · open workbook — allocated (MB)"
     x-axis ["NPOI", "XLibur", "EPPlus", "ClosedXML"]
     y-axis "Allocated (MB)"
-    bar [426.24, 1893.03, 2086.15, 2609.62]
+    bar [211.34, 947.64, 1038.89, 1304.39]
 ```
 
 ```mermaid
@@ -67,7 +67,7 @@ xychart-beta
     title "Read · open + read all cells — time (ms)"
     x-axis ["EPPlus", "OpenXML SDK", "XLibur", "MiniExcel", "NPOI", "ClosedXML"]
     y-axis "Time (ms)"
-    bar [4606.2, 4900.24, 6850.76, 7264.94, 11300.18, 69839.84]
+    bar [2181.29, 2378.87, 3507.72, 3567.95, 5496.43, 20459.94]
 ```
 
 ```mermaid
@@ -80,7 +80,7 @@ xychart-beta
     title "Read · open + read all cells — allocated (MB)"
     x-axis ["OpenXML SDK", "MiniExcel", "XLibur", "EPPlus", "NPOI", "ClosedXML"]
     y-axis "Allocated (MB)"
-    bar [2506.41, 2710.44, 2879.36, 3727.63, 4321.42, 4350.23]
+    bar [1253.3, 1350.31, 1432.9, 1853.58, 2157.09, 2161.88]
 ```
 
 ```mermaid
@@ -93,7 +93,7 @@ xychart-beta
     title "Write · create + save — time (ms)"
     x-axis ["MiniExcel", "OpenXML SDK", "XLibur", "ClosedXML", "EPPlus", "NPOI"]
     y-axis "Time (ms)"
-    bar [62.09, 158.58, 275.83, 410.92, 441.92, 668.29]
+    bar [64.16, 178.1, 271.4, 416.09, 436.44, 659.49]
 ```
 
 ```mermaid
@@ -109,6 +109,8 @@ xychart-beta
     bar [84.59, 131.12, 134.19, 181.1, 247.27, 322.83]
 ```
 
+## Detailed results
+
 
 ```
 
@@ -123,24 +125,37 @@ WarmupCount=3
 
 ```
 
-| Library     | Type                     | Method         | Mean         | Error        | StdDev     | Gen0        | Gen1        | Gen2       | Allocated  |
-|------------ |------------------------- |--------------- |-------------:|-------------:|-----------:|------------:|------------:|-----------:|-----------:|
-| ClosedXML   | ClosedXmlReadBenchmarks  | OpenWorkbook   |  7,222.28 ms |  2,813.25 ms | 154.203 ms | 160000.0000 |  50000.0000 |  3000.0000 | 2609.62 MB |
-| ClosedXML   | ClosedXmlWriteBenchmarks | CreateAndSave  |    410.92 ms |     54.49 ms |   2.987 ms |  11000.0000 |   6000.0000 |  3000.0000 |   181.1 MB |
-| EPPlus      | EpPlusReadBenchmarks     | OpenWorkbook   |  3,532.64 ms |  1,606.31 ms |  88.047 ms |  77000.0000 |  27000.0000 |  8000.0000 | 2086.15 MB |
-| EPPlus      | EpPlusWriteBenchmarks    | CreateAndSave  |    441.92 ms |    341.47 ms |  18.717 ms |  20000.0000 |   9000.0000 |  3000.0000 |  322.83 MB |
-| MiniExcel   | MiniExcelReadBenchmarks  | OpenAndReadAll |  7,264.94 ms |  1,607.06 ms |  88.088 ms | 169000.0000 |   1000.0000 |          - | 2710.44 MB |
-| MiniExcel   | MiniExcelWriteBenchmarks | CreateAndSave  |     62.09 ms |     56.67 ms |   3.106 ms |   5333.3333 |   1444.4444 |  1333.3333 |   84.59 MB |
-| NPOI        | NpoiReadBenchmarks       | OpenWorkbook   |    635.99 ms |  1,595.64 ms |  87.462 ms |   7000.0000 |   6000.0000 |  2000.0000 |  426.24 MB |
-| NPOI        | NpoiWriteBenchmarks      | CreateAndSave  |    668.29 ms |    368.46 ms |  20.196 ms |  16000.0000 |  12000.0000 |  3000.0000 |  247.27 MB |
-| OpenXML SDK | OpenXmlReadBenchmarks    | OpenAndReadAll |  4,900.24 ms |  1,274.04 ms |  69.835 ms | 159000.0000 |  16000.0000 |  3000.0000 | 2506.41 MB |
-| OpenXML SDK | OpenXmlWriteBenchmarks   | CreateAndSave  |    158.58 ms |     37.35 ms |   2.047 ms |   8000.0000 |   2000.0000 |  2000.0000 |  134.19 MB |
-| XLibur      | XLiburReadBenchmarks     | OpenWorkbook   |  5,116.98 ms |    353.75 ms |  19.390 ms | 120000.0000 |  39000.0000 |  4000.0000 | 1893.03 MB |
-| XLibur      | XLiburWriteBenchmarks    | CreateAndSave  |    275.83 ms |     81.56 ms |   4.471 ms |   7000.0000 |   3000.0000 |  2000.0000 |  131.12 MB |
-| ClosedXML   | ClosedXmlReadBenchmarks  | OpenAndReadAll | 69,839.84 ms |  2,303.82 ms | 126.280 ms | 233000.0000 |  87000.0000 |  6000.0000 | 4350.23 MB |
-| EPPlus      | EpPlusReadBenchmarks     | OpenAndReadAll |  4,606.20 ms |  1,076.68 ms |  59.016 ms | 180000.0000 |  29000.0000 |  8000.0000 | 3727.63 MB |
-| NPOI        | NpoiReadBenchmarks       | OpenAndReadAll | 11,300.18 ms | 14,576.44 ms | 798.984 ms | 257000.0000 | 236000.0000 | 10000.0000 | 4321.42 MB |
-| XLibur      | XLiburReadBenchmarks     | OpenAndReadAll |  6,850.76 ms |    507.49 ms |  27.817 ms | 153000.0000 |  56000.0000 |  5000.0000 | 2879.36 MB |
+### Read · open workbook
+
+| Library     | Type                     | Method         | Mean         | Error       | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|------------:|-----------:|------------:|------------:|----------:|-----------:|
+| NPOI        | NpoiReadBenchmarks       | OpenWorkbook   |    272.68 ms |   177.75 ms |   9.743 ms |   4000.0000 |   3500.0000 | 1500.0000 |  211.34 MB |
+| EPPlus      | EpPlusReadBenchmarks     | OpenWorkbook   |  1,694.42 ms |   584.85 ms |  32.058 ms |  41000.0000 |  17000.0000 | 7000.0000 | 1038.89 MB |
+| XLibur      | XLiburReadBenchmarks     | OpenWorkbook   |  2,513.02 ms |   501.61 ms |  27.495 ms |  61000.0000 |  21000.0000 | 3000.0000 |  947.64 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks  | OpenWorkbook   |  3,460.56 ms | 1,465.40 ms |  80.323 ms |  81000.0000 |  27000.0000 | 3000.0000 | 1304.39 MB |
+
+### Read · open + read all cells
+
+| Library     | Type                     | Method         | Mean         | Error       | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|------------:|-----------:|------------:|------------:|----------:|-----------:|
+| EPPlus      | EpPlusReadBenchmarks     | OpenAndReadAll |  2,181.29 ms |   365.83 ms |  20.052 ms |  92000.0000 |  18000.0000 | 7000.0000 | 1853.58 MB |
+| OpenXML SDK | OpenXmlReadBenchmarks    | OpenAndReadAll |  2,378.87 ms |   632.33 ms |  34.660 ms |  80000.0000 |   9000.0000 | 2000.0000 |  1253.3 MB |
+| XLibur      | XLiburReadBenchmarks     | OpenAndReadAll |  3,507.72 ms | 1,426.08 ms |  78.168 ms |  78000.0000 |  30000.0000 | 4000.0000 |  1432.9 MB |
+| MiniExcel   | MiniExcelReadBenchmarks  | OpenAndReadAll |  3,567.95 ms | 1,626.50 ms |  89.154 ms |  84000.0000 |   1000.0000 |         - | 1350.31 MB |
+| NPOI        | NpoiReadBenchmarks       | OpenAndReadAll |  5,496.43 ms | 6,454.93 ms | 353.816 ms | 131000.0000 | 121000.0000 | 8000.0000 | 2157.09 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks  | OpenAndReadAll | 20,459.94 ms | 1,121.56 ms |  61.477 ms | 117000.0000 |  44000.0000 | 4000.0000 | 2161.88 MB |
+
+### Write · create + save
+
+| Library     | Type                     | Method         | Mean         | Error       | StdDev     | Gen0        | Gen1        | Gen2      | Allocated  |
+|------------ |------------------------- |--------------- |-------------:|------------:|-----------:|------------:|------------:|----------:|-----------:|
+| MiniExcel   | MiniExcelWriteBenchmarks | CreateAndSave  |     64.16 ms |   108.87 ms |   5.968 ms |   5125.0000 |   1250.0000 | 1125.0000 |   84.59 MB |
+| OpenXML SDK | OpenXmlWriteBenchmarks   | CreateAndSave  |    178.10 ms |   295.26 ms |  16.184 ms |   8000.0000 |   2000.0000 | 2000.0000 |  134.19 MB |
+| XLibur      | XLiburWriteBenchmarks    | CreateAndSave  |    271.40 ms |    97.22 ms |   5.329 ms |   7000.0000 |   3000.0000 | 2000.0000 |  131.12 MB |
+| ClosedXML   | ClosedXmlWriteBenchmarks | CreateAndSave  |    416.09 ms |    98.83 ms |   5.417 ms |  11000.0000 |   6000.0000 | 3000.0000 |   181.1 MB |
+| EPPlus      | EpPlusWriteBenchmarks    | CreateAndSave  |    436.44 ms |    44.65 ms |   2.447 ms |  20000.0000 |   9000.0000 | 3000.0000 |  322.83 MB |
+| NPOI        | NpoiWriteBenchmarks      | CreateAndSave  |    659.49 ms |   136.59 ms |   7.487 ms |  16000.0000 |  12000.0000 | 3000.0000 |  247.27 MB |
+
 
 
 <script type="module">
@@ -161,33 +176,25 @@ WarmupCount=3
 
 <script>
 (function () {
-  const table = [...document.querySelectorAll('table')].find(t => t.tHead &&
-    [...t.tHead.rows[0].cells].some(c => c.textContent.trim().toLowerCase() === 'mean'));
-  if (!table || !table.tBodies[0]) return;
-  const heads = [...table.tHead.rows[0].cells].map(c => c.textContent.trim().toLowerCase());
-  const methodCol = heads.indexOf('method');
-  const metricCols = heads.map((h, i) => /^(mean|allocated|gen0|gen1|gen2)$/.test(h) ? i : -1).filter(i => i >= 0);
-  const rows = [...table.tBodies[0].rows];
   const parse = s => { const n = parseFloat(String(s).replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
-  const groups = {};
-  rows.forEach((r, i) => {
-    const key = methodCol >= 0 ? (r.cells[methodCol]?.textContent.trim() || '') : 'all';
-    (groups[key] ||= []).push(i);
-  });
-  for (const c of metricCols) {
-    for (const key in groups) {
-      const idx = groups[key];
-      const vals = idx.map(i => parse(rows[i].cells[c]?.textContent));
+  document.querySelectorAll('table').forEach(table => {
+    if (!table.tHead || !table.tBodies[0]) return;
+    const heads = [...table.tHead.rows[0].cells].map(c => c.textContent.trim().toLowerCase());
+    if (!heads.includes('mean')) return;
+    const metricCols = heads.map((h, i) => /^(mean|allocated|gen0|gen1|gen2)$/.test(h) ? i : -1).filter(i => i >= 0);
+    const rows = [...table.tBodies[0].rows];
+    for (const c of metricCols) {
+      const vals = rows.map(r => parse(r.cells[c]?.textContent));
       const nums = vals.filter(v => v !== null);
       if (nums.length < 2) continue;
       const min = Math.min(...nums), max = Math.max(...nums);
       if (max === min) continue;
-      idx.forEach((i, k) => {
-        const v = vals[k]; if (v === null) return;
+      rows.forEach((r, i) => {
+        const v = vals[i]; if (v === null) return;
         const ratio = (v - min) / (max - min);
-        rows[i].cells[c].style.backgroundColor = `hsla(${120 - 120 * ratio}, 70%, 50%, 0.45)`;
+        r.cells[c].style.backgroundColor = `hsla(${120 - 120 * ratio}, 70%, 50%, 0.45)`;
       });
     }
-  }
+  });
 })();
 </script>

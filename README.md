@@ -22,7 +22,7 @@ generated `docs/results.md` reports the exact resolved versions from each run vi
 
 ## Scenarios
 
-**Read** (200,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
+**Read** (100,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
 
 - `OpenWorkbook` — load the workbook into memory (eager-model libraries only).
 - `OpenAndReadAll` — open, then read every populated cell as a string using each library's

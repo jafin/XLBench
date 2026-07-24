@@ -136,18 +136,18 @@ namespace XLBench
                 writer.Write(header);
                 writer.WriteLine("📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.");
                 writer.WriteLine();
-                writer.WriteLine("On the Pages site the results table is heat-mapped per scenario (🟩 best → 🟥 worst).");
+                writer.WriteLine("Each results table (one per test method) is heat-mapped independently on the Pages site (🟩 best → 🟥 worst).");
                 writer.WriteLine();
                 writer.Write(BuildVersionsTable());
                 writer.Write(BuildMermaidSection(scenarios));
+                writer.WriteLine("## Detailed results");
+                writer.WriteLine();
                 foreach (var report in reports)
                 {
                     writer.WriteLine();
-                    // kramdown (GitHub Pages) needs a blank line before a table; BenchmarkDotNet
-                    // places its table directly after the closing ``` of the environment block,
-                    // which github.com's GFM tolerates but kramdown renders as literal text.
-                    var content = Regex.Replace(File.ReadAllText(report), "```(\r?\n)(\\|)", "```$1$1$2");
-                    writer.Write(content);
+                    // Split BenchmarkDotNet's single joined table into one table per test method
+                    // so each is compared (and heat-mapped) like-for-like.
+                    writer.Write(BuildSplitTables(File.ReadAllText(report)));
                     writer.WriteLine();
                 }
 
@@ -189,40 +189,33 @@ namespace XLBench
 
             """;
 
-        // Heat-maps the numeric metric columns of the results table (Mean, Gen0/1/2, Allocated),
-        // grouped by scenario (Method) so colours compare like-for-like: green = best, red = worst.
+        // Heat-maps the numeric metric columns (Mean, Gen0/1/2, Allocated) of every results
+        // table. Each table is a single test method, so colouring per-table is inherently
+        // per-scenario: green = best, red = worst.
         private const string HeatmapScript =
             """
             <script>
             (function () {
-              const table = [...document.querySelectorAll('table')].find(t => t.tHead &&
-                [...t.tHead.rows[0].cells].some(c => c.textContent.trim().toLowerCase() === 'mean'));
-              if (!table || !table.tBodies[0]) return;
-              const heads = [...table.tHead.rows[0].cells].map(c => c.textContent.trim().toLowerCase());
-              const methodCol = heads.indexOf('method');
-              const metricCols = heads.map((h, i) => /^(mean|allocated|gen0|gen1|gen2)$/.test(h) ? i : -1).filter(i => i >= 0);
-              const rows = [...table.tBodies[0].rows];
               const parse = s => { const n = parseFloat(String(s).replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
-              const groups = {};
-              rows.forEach((r, i) => {
-                const key = methodCol >= 0 ? (r.cells[methodCol]?.textContent.trim() || '') : 'all';
-                (groups[key] ||= []).push(i);
-              });
-              for (const c of metricCols) {
-                for (const key in groups) {
-                  const idx = groups[key];
-                  const vals = idx.map(i => parse(rows[i].cells[c]?.textContent));
+              document.querySelectorAll('table').forEach(table => {
+                if (!table.tHead || !table.tBodies[0]) return;
+                const heads = [...table.tHead.rows[0].cells].map(c => c.textContent.trim().toLowerCase());
+                if (!heads.includes('mean')) return;
+                const metricCols = heads.map((h, i) => /^(mean|allocated|gen0|gen1|gen2)$/.test(h) ? i : -1).filter(i => i >= 0);
+                const rows = [...table.tBodies[0].rows];
+                for (const c of metricCols) {
+                  const vals = rows.map(r => parse(r.cells[c]?.textContent));
                   const nums = vals.filter(v => v !== null);
                   if (nums.length < 2) continue;
                   const min = Math.min(...nums), max = Math.max(...nums);
                   if (max === min) continue;
-                  idx.forEach((i, k) => {
-                    const v = vals[k]; if (v === null) return;
+                  rows.forEach((r, i) => {
+                    const v = vals[i]; if (v === null) return;
                     const ratio = (v - min) / (max - min);
-                    rows[i].cells[c].style.backgroundColor = `hsla(${120 - 120 * ratio}, 70%, 50%, 0.45)`;
+                    r.cells[c].style.backgroundColor = `hsla(${120 - 120 * ratio}, 70%, 50%, 0.45)`;
                   });
                 }
-              }
+              });
             })();
             </script>
 
@@ -294,6 +287,71 @@ namespace XLBench
                 sb.AppendLine($"| {lib} | {ver} |");
             sb.AppendLine();
             return sb.ToString();
+        }
+
+        // ---- Split the joined table into one table per test method -------------------
+
+        private static string BuildSplitTables(string report)
+        {
+            var lines = report.Replace("\r\n", "\n").Split('\n');
+
+            var headerIdx = Array.FindIndex(lines, l =>
+            {
+                var t = l.TrimStart();
+                return t.StartsWith('|') && l.Contains("Method") && l.Contains("Mean");
+            });
+            if (headerIdx < 1) return report; // unexpected format — leave unchanged
+
+            var headerLine = lines[headerIdx];
+            var delimLine = lines[headerIdx + 1];
+            var headers = SplitRow(headerLine);
+            var methodCol = Array.FindIndex(headers, c => c.Equals("Method", StringComparison.OrdinalIgnoreCase));
+            var meanCol = Array.FindIndex(headers, c => c.Equals("Mean", StringComparison.OrdinalIgnoreCase));
+            if (methodCol < 0) return report;
+
+            var dataRows = new List<string>();
+            for (var i = headerIdx + 2; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
+                dataRows.Add(lines[i]);
+
+            // Everything before the table (the fenced environment block) is kept once, up top.
+            var preamble = string.Join("\n", lines.Take(headerIdx)).TrimEnd('\n');
+
+            var byMethod = dataRows
+                .GroupBy(r => SplitRow(r).ElementAtOrDefault(methodCol) ?? string.Empty)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Known methods first (in MethodLabels order), then any others.
+            var orderedKeys = MethodLabels.Select(m => m.Key).Where(byMethod.ContainsKey)
+                .Concat(byMethod.Keys.Where(k => MethodLabels.All(m => m.Key != k)))
+                .ToList();
+
+            var sb = new StringBuilder();
+            sb.AppendLine(preamble).AppendLine();
+            foreach (var key in orderedKeys)
+            {
+                var label = MethodLabels.FirstOrDefault(m => m.Key == key).Label ?? key;
+                var rows = byMethod[key];
+                if (meanCol >= 0)
+                    rows = rows.OrderBy(r => ParseLeadingNumber(SplitRow(r).ElementAtOrDefault(meanCol))).ToList();
+
+                sb.AppendLine($"### {label}").AppendLine();
+                sb.AppendLine(headerLine);
+                sb.AppendLine(delimLine);
+                foreach (var r in rows) sb.AppendLine(r);
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        private static string[] SplitRow(string line) =>
+            line.Trim().Trim('|').Split('|').Select(c => c.Trim()).ToArray();
+
+        private static double ParseLeadingNumber(string? cell)
+        {
+            if (cell is null) return double.MaxValue;
+            var m = Regex.Match(cell.Replace(",", string.Empty), @"-?\d+(\.\d+)?");
+            return m.Success && double.TryParse(m.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)
+                ? v : double.MaxValue;
         }
 
         // ---- Mermaid (static, renders in the GitHub file view) -----------------------

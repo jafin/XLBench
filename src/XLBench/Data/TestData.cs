@@ -16,7 +16,7 @@ namespace XLBench.Data;
 /// </summary>
 public static class TestData
 {
-    public const int ReadRowCount = 200_000;
+    public const int ReadRowCount = 100_000;
     public const int ReadColCount = 15;
     public const int WriteRowCount = 50_000;
 
