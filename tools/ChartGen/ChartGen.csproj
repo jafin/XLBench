@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tiny build-time tool: bakes docs/results-data.js into a self-contained
+    docs/charts.html from charts.template.html. No package references — it only
+    uses System.Text.Json from the shared framework. TargetFramework/Nullable/
+    ImplicitUsings are inherited from the repo-root Directory.Build.props.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- Keep this utility out of the repo-wide "build everything" if a solution filter picks it up. -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+</Project>

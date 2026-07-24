@@ -230,7 +230,7 @@ namespace XLBench
 
         // ---- Metric extraction -------------------------------------------------------
 
-        private sealed record Series(string Library, double? TimeMs, double? AllocMb);
+        private sealed record Series(string Library, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs);
 
         private sealed record Scenario(string Key, string Label, IReadOnlyList<Series> ByLibrary);
 
@@ -245,14 +245,19 @@ namespace XLBench
         private static List<Scenario> ExtractScenarios(IEnumerable<Summary> summaries)
         {
             // Flatten every report into (library, method, time, allocated).
-            var rows = new List<(string Library, string Method, double? TimeMs, double? AllocMb)>();
+            var rows = new List<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs)>();
             foreach (var summary in summaries)
             foreach (var report in summary.Reports)
             {
                 var lib = LibraryNames.FromTypeName(report.BenchmarkCase.Descriptor.Type.Name);
                 var method = report.BenchmarkCase.Descriptor.WorkloadMethod.Name;
 
-                double? timeMs = report.ResultStatistics?.Mean is { } ns ? ns / 1_000_000.0 : null;
+                // All statistics are in nanoseconds; the interactive page works in ms.
+                var stats = report.ResultStatistics;
+                double? timeMs = stats?.Mean is { } ns ? ns / 1_000_000.0 : null;
+                // "Error" matches BenchmarkDotNet's Error column: the 99.9% CI half-width.
+                double? errorMs = stats is not null ? stats.ConfidenceInterval.Margin / 1_000_000.0 : null;
+                double? stdDevMs = stats is not null ? stats.StandardDeviation / 1_000_000.0 : null;
 
                 double? allocMb = null;
                 var allocMetric = report.Metrics.Values
@@ -260,7 +265,7 @@ namespace XLBench
                 if (allocMetric is not null && !double.IsNaN(allocMetric.Value))
                     allocMb = allocMetric.Value / (1024.0 * 1024.0);
 
-                rows.Add((lib, method, timeMs, allocMb));
+                rows.Add((lib, method, timeMs, allocMb, errorMs, stdDevMs));
             }
 
             var scenarios = new List<Scenario>();
@@ -269,7 +274,7 @@ namespace XLBench
                 var byLibrary = rows
                     .Where(r => r.Method == key && r.TimeMs.HasValue)
                     .OrderBy(r => r.TimeMs)
-                    .Select(r => new Series(r.Library, r.TimeMs, r.AllocMb))
+                    .Select(r => new Series(r.Library, r.TimeMs, r.AllocMb, r.ErrorMs, r.StdDevMs))
                     .ToList();
                 if (byLibrary.Count > 0)
                     scenarios.Add(new Scenario(key, label, byLibrary));
@@ -353,6 +358,9 @@ namespace XLBench
                     libraries = s.ByLibrary.Select(b => b.Library).ToArray(),
                     timeMs = s.ByLibrary.Select(b => b.TimeMs.HasValue ? Math.Round(b.TimeMs.Value, 2) : (double?)null).ToArray(),
                     allocMb = s.ByLibrary.Select(b => b.AllocMb.HasValue ? Math.Round(b.AllocMb.Value, 2) : (double?)null).ToArray(),
+                    // Consumed by charts.html for the error whiskers and the tooltip's std-dev line.
+                    errorMs = s.ByLibrary.Select(b => b.ErrorMs.HasValue ? Math.Round(b.ErrorMs.Value, 2) : (double?)null).ToArray(),
+                    stdDevMs = s.ByLibrary.Select(b => b.StdDevMs.HasValue ? Math.Round(b.StdDevMs.Value, 3) : (double?)null).ToArray(),
                 }).ToArray(),
             };
 

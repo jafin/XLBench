@@ -1,0 +1,49 @@
+name: docs charts
+
+# Regenerates the self-contained docs/charts.html from docs/results-data.js whenever a
+# maintainer commits fresh benchmark data. No benchmarks run here — this only bakes the
+# already-committed numbers into the interactive page, so it's fast and deterministic.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/results-data.js'
+      - 'tools/ChartGen/**'
+  workflow_dispatch:
+
+# Needed so the job can commit the regenerated page back to main.
+permissions:
+  contents: write
+
+# Never run two regenerations against main at once.
+concurrency:
+  group: docs-charts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Generate docs/charts.html
+        run: dotnet run --project tools/ChartGen -c Release
+
+      - name: Commit regenerated page
+        run: |
+          if git diff --quiet -- docs/charts.html; then
+            echo "charts.html unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/charts.html
+          # [skip ci] keeps this commit from re-triggering build.yml; the path filter above
+          # already keeps it from re-triggering this workflow.
+          git commit -m "docs: regenerate charts.html from results-data.js [skip ci]"
+          git push
