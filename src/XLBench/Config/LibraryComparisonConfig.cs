@@ -16,12 +16,19 @@ namespace XLBench.Config;
 /// </summary>
 public static class BenchmarkConfig
 {
-    public static IConfig Create() =>
-        ManualConfig.Create(DefaultConfig.Instance)
+    public static IConfig Create()
+    {
+        var config = ManualConfig.Create(DefaultConfig.Instance)
             .WithOption(ConfigOptions.JoinSummary, true)
             .AddColumn(new LibraryNameColumn())
             .AddDiagnoser(MemoryDiagnoser.Default)
             .AddExporter(MarkdownExporter.GitHub);
+
+        // The Namespace column is always "XLBench.Benchmarks.Read/Write" — redundant, and it
+        // widens the results table. Hide it (the Library + Type + Method columns identify each row).
+        config.HideColumns("Namespace");
+        return config;
+    }
 }
 
 /// <summary>Maps a benchmark class name to the friendly library name shown in reports.</summary>

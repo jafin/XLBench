@@ -136,6 +136,8 @@ namespace XLBench
                 writer.Write(header);
                 writer.WriteLine("📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.");
                 writer.WriteLine();
+                writer.WriteLine("On the Pages site the results table is heat-mapped per scenario (🟩 best → 🟥 worst).");
+                writer.WriteLine();
                 writer.Write(BuildVersionsTable());
                 writer.Write(BuildMermaidSection(scenarios));
                 foreach (var report in reports)
@@ -154,6 +156,10 @@ namespace XLBench
                 // github.com the fences render natively, so this script is simply ignored.)
                 writer.WriteLine();
                 writer.Write(MermaidRenderScript);
+
+                // Heat-map the numeric results-table cells per scenario (client-side, Pages only).
+                writer.WriteLine();
+                writer.Write(HeatmapScript);
             }
 
             WriteChartData(docsDir, scenarios);
@@ -179,6 +185,45 @@ namespace XLBench
                 mermaid.initialize({ startOnLoad: false });
                 await mermaid.run({ querySelector: 'pre.mermaid' });
               }
+            </script>
+
+            """;
+
+        // Heat-maps the numeric metric columns of the results table (Mean, Gen0/1/2, Allocated),
+        // grouped by scenario (Method) so colours compare like-for-like: green = best, red = worst.
+        private const string HeatmapScript =
+            """
+            <script>
+            (function () {
+              const table = [...document.querySelectorAll('table')].find(t => t.tHead &&
+                [...t.tHead.rows[0].cells].some(c => c.textContent.trim().toLowerCase() === 'mean'));
+              if (!table || !table.tBodies[0]) return;
+              const heads = [...table.tHead.rows[0].cells].map(c => c.textContent.trim().toLowerCase());
+              const methodCol = heads.indexOf('method');
+              const metricCols = heads.map((h, i) => /^(mean|allocated|gen0|gen1|gen2)$/.test(h) ? i : -1).filter(i => i >= 0);
+              const rows = [...table.tBodies[0].rows];
+              const parse = s => { const n = parseFloat(String(s).replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
+              const groups = {};
+              rows.forEach((r, i) => {
+                const key = methodCol >= 0 ? (r.cells[methodCol]?.textContent.trim() || '') : 'all';
+                (groups[key] ||= []).push(i);
+              });
+              for (const c of metricCols) {
+                for (const key in groups) {
+                  const idx = groups[key];
+                  const vals = idx.map(i => parse(rows[i].cells[c]?.textContent));
+                  const nums = vals.filter(v => v !== null);
+                  if (nums.length < 2) continue;
+                  const min = Math.min(...nums), max = Math.max(...nums);
+                  if (max === min) continue;
+                  idx.forEach((i, k) => {
+                    const v = vals[k]; if (v === null) return;
+                    const ratio = (v - min) / (max - min);
+                    rows[i].cells[c].style.backgroundColor = `hsla(${120 - 120 * ratio}, 70%, 50%, 0.45)`;
+                  });
+                }
+              }
+            })();
             </script>
 
             """;
