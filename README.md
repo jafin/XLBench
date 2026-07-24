@@ -89,6 +89,18 @@ full run lives in `.github/workflows/benchmark.yml`.
    — so the joined summary aligns).
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
 
+## Dependency updates
+
+[Dependabot](.github/dependabot.yml) opens weekly PRs for outdated NuGet packages (the
+Excel libraries, BenchmarkDotNet, tooling) and GitHub Actions. Minor/patch bumps are
+grouped into one PR; majors get their own. `build.yml` validates each PR (build + a Dry
+smoke run). XLibur is a prerelease, so Dependabot tracks newer `rc` releases.
+
+> **Note:** merging a Dependabot PR updates the *package version and confirms it builds* —
+> it does **not** refresh the published benchmark numbers. After merging a library bump,
+> re-run `scripts/run-benchmarks.ps1` (or dispatch `benchmark.yml`) and commit the
+> regenerated `docs/` so the results reflect the new version.
+
 ## Project layout
 
 ```
