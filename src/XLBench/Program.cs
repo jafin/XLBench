@@ -239,6 +239,9 @@ namespace XLBench
 
         private sealed record Series(string Library, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs);
 
+        /// <summary>Maps NaN/Infinity (which are not valid JSON) to null; passes finite values through.</summary>
+        private static double? Finite(double? v) => v is { } d && double.IsFinite(d) ? d : null;
+
         private sealed record Scenario(string Key, string Label, IReadOnlyList<Series> ByLibrary);
 
         // Benchmark method name -> human label. Order controls chart order.
@@ -260,17 +263,17 @@ namespace XLBench
                 var method = report.BenchmarkCase.Descriptor.WorkloadMethod.Name;
 
                 // All statistics are in nanoseconds; the interactive page works in ms.
+                // Stats can be NaN/Infinity for degenerate runs (e.g. a single measurement on a
+                // noisy CI runner); Finite() maps those to null so JSON serialization can't fail.
                 var stats = report.ResultStatistics;
-                double? timeMs = stats?.Mean is { } ns ? ns / 1_000_000.0 : null;
+                double? timeMs = Finite(stats?.Mean is { } ns ? ns / 1_000_000.0 : null);
                 // "Error" matches BenchmarkDotNet's Error column: the 99.9% CI half-width.
-                double? errorMs = stats is not null ? stats.ConfidenceInterval.Margin / 1_000_000.0 : null;
-                double? stdDevMs = stats is not null ? stats.StandardDeviation / 1_000_000.0 : null;
+                double? errorMs = Finite(stats is not null ? stats.ConfidenceInterval.Margin / 1_000_000.0 : null);
+                double? stdDevMs = Finite(stats is not null ? stats.StandardDeviation / 1_000_000.0 : null);
 
-                double? allocMb = null;
                 var allocMetric = report.Metrics.Values
                     .FirstOrDefault(m => m.Descriptor.Id.Contains("Allocated", StringComparison.OrdinalIgnoreCase));
-                if (allocMetric is not null && !double.IsNaN(allocMetric.Value))
-                    allocMb = allocMetric.Value / (1024.0 * 1024.0);
+                double? allocMb = Finite(allocMetric is not null ? allocMetric.Value / (1024.0 * 1024.0) : null);
 
                 rows.Add((lib, method, timeMs, allocMb, errorMs, stdDevMs));
             }
