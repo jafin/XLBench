@@ -21,7 +21,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 |
 | NPOI | `NPOI` | 2.8.0 |
 | MiniExcel | `MiniExcel` | 1.45.0 |
-| XLibur | `XLibur.Bundle` | 0.105.1-rc.137 |
+| XLibur | `XLibur.Bundle` | 0.105.1-rc.151 |
 
 ## Scenarios
 

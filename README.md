@@ -15,7 +15,7 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 | Low-level SAX streaming |
 | NPOI | `NPOI` | 2.8.0 | Java POI port |
 | MiniExcel | `MiniExcel` | 1.45.0 | Streaming, POCO/dynamic oriented |
-| XLibur | `XLibur.Bundle` | 0.105.1-rc.137 | Prerelease; bundles the SkiaSharp font engine (auto-registers) |
+| XLibur | `XLibur.Bundle` | 0.105.1-rc.151 | Prerelease; bundles the SkiaSharp font engine (auto-registers) |
 
 Versions are the pinned NuGet package versions (see `src/XLBench/XLBench.csproj`); the
 generated `docs/results.md` reports the exact resolved versions from each run via reflection.
