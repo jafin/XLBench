@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XLBench — Interactive charts</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --card: #f6f8fa; --border: #d0d7de;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --card: #161b22; --border: #30363d; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    h1 { margin: 0 0 .25rem; }
+    a { color: #0969da; } @media (prefers-color-scheme: dark) { a { color: #4493f8; } }
+    .muted { color: var(--muted); }
+    .controls {
+      display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+      margin: 1.25rem 0; padding: .75rem 1rem; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .scenario { margin: 2rem 0; }
+    .scenario h2 { margin: 0 0 .75rem; font-size: 1.15rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem; min-width: 0;
+    }
+    .card h3 { margin: 0 0 .5rem; font-size: .95rem; font-weight: 600; }
+    .chart-box { position: relative; height: 300px; }
+    #empty { padding: 2rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>XLBench — interactive charts</h1>
+    <p class="muted">
+      Read/write performance and memory across .NET Excel libraries. One bar per library;
+      lower is better. See the <a href="results.md">full result tables</a> and the
+      <a href="index.md">project overview</a>.
+    </p>
+    <p class="muted" id="updated"></p>
+
+    <div class="controls">
+      <label><input type="checkbox" id="logScale"> Logarithmic Y-axis</label>
+      <span class="muted">(useful — values span orders of magnitude)</span>
+    </div>
+
+    <div id="charts"></div>
+    <div id="empty" class="muted" style="display:none">
+      No results yet. Run <code>scripts/run-benchmarks.ps1</code> to generate the data.
+    </div>
+  </div>
+
+  <script src="results-data.js"></script>
+  <script>
+    (function () {
+      const data = window.XLBENCH_DATA;
+      const host = document.getElementById('charts');
+      if (!data || !data.scenarios || data.scenarios.length === 0) {
+        document.getElementById('empty').style.display = 'block';
+        return;
+      }
+      if (data.updated) {
+        document.getElementById('updated').textContent = 'Last run: ' + data.updated;
+      }
+
+      // Stable color per library across every chart.
+      const palette = ['#3fb950','#58a6ff','#d29922','#f85149','#a371f7','#ec6cb9','#39c5cf','#db6d28'];
+      const libColor = {};
+      let ci = 0;
+      for (const s of data.scenarios) {
+        for (const lib of s.libraries) {
+          if (!(lib in libColor)) libColor[lib] = palette[ci++ % palette.length];
+        }
+      }
+
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+      const tickColor = isDark ? '#8b949e' : '#656d76';
+      Chart.defaults.color = tickColor;
+
+      const charts = [];
+
+      function makeChart(canvas, libraries, values, unit) {
+        // Drop null entries (e.g. libraries without an allocation figure), keep aligned.
+        const labels = [], vals = [], colors = [];
+        for (let i = 0; i < libraries.length; i++) {
+          if (values[i] == null) continue;
+          labels.push(libraries[i]); vals.push(values[i]); colors.push(libColor[libraries[i]]);
+        }
+        const c = new Chart(canvas, {
+          type: 'bar',
+          data: { labels, datasets: [{ data: vals, backgroundColor: colors, borderRadius: 4 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: (x) => ` ${x.parsed.y.toLocaleString()} ${unit}` } }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { beginAtZero: true, grid: { color: gridColor },
+                   title: { display: true, text: unit } }
+            }
+          }
+        });
+        charts.push({ chart: c, unit });
+        return c;
+      }
+
+      for (const s of data.scenarios) {
+        const section = document.createElement('div');
+        section.className = 'scenario';
+        section.innerHTML =
+          `<h2>${s.label}</h2>
+           <div class="grid">
+             <div class="card"><h3>Time (ms)</h3><div class="chart-box"><canvas></canvas></div></div>
+             <div class="card"><h3>Allocated (MB)</h3><div class="chart-box"><canvas></canvas></div></div>
+           </div>`;
+        host.appendChild(section);
+        const canvases = section.querySelectorAll('canvas');
+        makeChart(canvases[0], s.libraries, s.timeMs, 'ms');
+        makeChart(canvases[1], s.libraries, s.allocMb, 'MB');
+      }
+
+      document.getElementById('logScale').addEventListener('change', (e) => {
+        const type = e.target.checked ? 'logarithmic' : 'linear';
+        for (const { chart } of charts) {
+          chart.options.scales.y.type = type;
+          chart.options.scales.y.beginAtZero = !e.target.checked;
+          chart.update();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

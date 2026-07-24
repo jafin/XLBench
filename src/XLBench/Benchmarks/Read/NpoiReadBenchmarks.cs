@@ -24,17 +24,12 @@ public class NpoiReadBenchmarks
         using var wb = new XSSFWorkbook(new MemoryStream(_bytes));
         var sheet = wb.GetSheetAt(0);
 
+        // Iterate rows and their populated cells rather than random GetRow/GetCell access.
         long checksum = 0;
-        for (var r = 0; r < TestData.ReadRowCount; r++)
+        foreach (IRow row in sheet)
         {
-            var row = sheet.GetRow(r);
-            if (row is null) continue;
-            for (var c = 0; c < TestData.ReadColCount; c++)
-            {
-                var cell = row.GetCell(c);
-                if (cell is null) continue;
+            foreach (var cell in row.Cells)
                 checksum += (cell.ToString() ?? string.Empty).Length;
-            }
         }
         return checksum;
     }

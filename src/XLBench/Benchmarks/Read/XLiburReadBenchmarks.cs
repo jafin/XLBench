@@ -23,10 +23,10 @@ public class XLiburReadBenchmarks
         using var wb = new XLWorkbook(new MemoryStream(_bytes));
         var ws = wb.Worksheets.First();
 
+        // Idiomatic iteration over populated cells (mirrors the ClosedXML benchmark).
         long checksum = 0;
-        for (var row = 1; row <= TestData.ReadRowCount; row++)
-        for (var col = 1; col <= TestData.ReadColCount; col++)
-            checksum += ws.Cell(row, col).GetValue<string>().Length;
+        foreach (var cell in ws.CellsUsed())
+            checksum += cell.GetString().Length;
         return checksum;
     }
 }

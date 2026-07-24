@@ -24,6 +24,21 @@ public static class BenchmarkConfig
             .AddExporter(MarkdownExporter.GitHub);
 }
 
+/// <summary>Maps a benchmark class name to the friendly library name shown in reports.</summary>
+public static class LibraryNames
+{
+    public static string FromTypeName(string typeName) => typeName switch
+    {
+        var n when n.StartsWith("ClosedXml") => "ClosedXML",
+        var n when n.StartsWith("EpPlus") => "EPPlus",
+        var n when n.StartsWith("OpenXml") => "OpenXML SDK",
+        var n when n.StartsWith("Npoi") => "NPOI",
+        var n when n.StartsWith("MiniExcel") => "MiniExcel",
+        var n when n.StartsWith("XLibur") => "XLibur",
+        _ => typeName,
+    };
+}
+
 /// <summary>
 /// Derives a friendly library name from the benchmark class name so the joined summary
 /// can be grouped/sorted by the library under test.
@@ -34,20 +49,8 @@ public sealed class LibraryNameColumn : IColumn
     public string ColumnName => "Library";
     public bool IsDefault(Summary summary, BenchmarkCase benchmarkCase) => false;
 
-    public string GetValue(Summary summary, BenchmarkCase benchmarkCase)
-    {
-        var typeName = benchmarkCase.Descriptor.Type.Name;
-        return typeName switch
-        {
-            var n when n.StartsWith("ClosedXml") => "ClosedXML",
-            var n when n.StartsWith("EpPlus") => "EPPlus",
-            var n when n.StartsWith("OpenXml") => "OpenXML SDK",
-            var n when n.StartsWith("Npoi") => "NPOI",
-            var n when n.StartsWith("MiniExcel") => "MiniExcel",
-            var n when n.StartsWith("XLibur") => "XLibur",
-            _ => typeName,
-        };
-    }
+    public string GetValue(Summary summary, BenchmarkCase benchmarkCase) =>
+        LibraryNames.FromTypeName(benchmarkCase.Descriptor.Type.Name);
 
     public string GetValue(Summary summary, BenchmarkCase benchmarkCase, SummaryStyle style) => GetValue(summary, benchmarkCase);
     public bool IsAvailable(Summary summary) => true;

@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using XLBench;
@@ -11,6 +14,10 @@ using XLBench.Config;
 //   dotnet run -c Release -- --filter *Read*     only read benchmarks
 //   dotnet run -c Release -- --job short         faster, lower-fidelity run
 var config = BenchmarkConfig.Create();
+
+// BenchmarkDotNet accumulates report files across runs; clear the previous run's results
+// so the published docs/results.md reflects only the current run.
+ResultsPublisher.CleanPreviousResults();
 
 var summaries = BenchmarkSwitcher
     .FromAssembly(typeof(Program).Assembly)
@@ -31,6 +38,19 @@ namespace XLBench
     /// </summary>
     internal static class ResultsPublisher
     {
+        private static string ArtifactsResultsDir =>
+            Path.Combine(Directory.GetCurrentDirectory(), "BenchmarkDotNet.Artifacts", "results");
+
+        /// <summary>Removes report files from a prior run so results.md reflects only this run.</summary>
+        public static void CleanPreviousResults()
+        {
+            if (!Directory.Exists(ArtifactsResultsDir)) return;
+            foreach (var f in Directory.GetFiles(ArtifactsResultsDir, "*-report-github.md"))
+            {
+                try { File.Delete(f); } catch (IOException) { /* best effort */ }
+            }
+        }
+
         public static void Publish(IEnumerable<Summary> summaries)
         {
             var summaryList = summaries.ToList();
@@ -79,10 +99,15 @@ namespace XLBench
 
                 """;
 
+            var scenarios = ExtractScenarios(summaryList);
+
             var outFile = Path.Combine(docsDir, "results.md");
             using (var writer = new StreamWriter(outFile, append: false))
             {
                 writer.Write(header);
+                writer.WriteLine("📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.");
+                writer.WriteLine();
+                writer.Write(BuildMermaidSection(scenarios));
                 foreach (var report in reports)
                 {
                     writer.WriteLine();
@@ -91,7 +116,121 @@ namespace XLBench
                 }
             }
 
-            Console.WriteLine($"[XLBench] Published {reports.Count} report(s) to {outFile}");
+            WriteChartData(docsDir, scenarios);
+
+            Console.WriteLine($"[XLBench] Published {reports.Count} report(s) + {scenarios.Count} scenario chart(s) to {docsDir}");
+        }
+
+        // ---- Metric extraction -------------------------------------------------------
+
+        private sealed record Series(string Library, double? TimeMs, double? AllocMb);
+
+        private sealed record Scenario(string Key, string Label, IReadOnlyList<Series> ByLibrary);
+
+        // Benchmark method name -> human label. Order controls chart order.
+        private static readonly (string Key, string Label)[] MethodLabels =
+        [
+            ("OpenWorkbook", "Read · open workbook"),
+            ("OpenAndReadAll", "Read · open + read all cells"),
+            ("CreateAndSave", "Write · create + save"),
+        ];
+
+        private static List<Scenario> ExtractScenarios(IEnumerable<Summary> summaries)
+        {
+            // Flatten every report into (library, method, time, allocated).
+            var rows = new List<(string Library, string Method, double? TimeMs, double? AllocMb)>();
+            foreach (var summary in summaries)
+            foreach (var report in summary.Reports)
+            {
+                var lib = LibraryNames.FromTypeName(report.BenchmarkCase.Descriptor.Type.Name);
+                var method = report.BenchmarkCase.Descriptor.WorkloadMethod.Name;
+
+                double? timeMs = report.ResultStatistics?.Mean is { } ns ? ns / 1_000_000.0 : null;
+
+                double? allocMb = null;
+                var allocMetric = report.Metrics.Values
+                    .FirstOrDefault(m => m.Descriptor.Id.Contains("Allocated", StringComparison.OrdinalIgnoreCase));
+                if (allocMetric is not null && !double.IsNaN(allocMetric.Value))
+                    allocMb = allocMetric.Value / (1024.0 * 1024.0);
+
+                rows.Add((lib, method, timeMs, allocMb));
+            }
+
+            var scenarios = new List<Scenario>();
+            foreach (var (key, label) in MethodLabels)
+            {
+                var byLibrary = rows
+                    .Where(r => r.Method == key && r.TimeMs.HasValue)
+                    .OrderBy(r => r.TimeMs)
+                    .Select(r => new Series(r.Library, r.TimeMs, r.AllocMb))
+                    .ToList();
+                if (byLibrary.Count > 0)
+                    scenarios.Add(new Scenario(key, label, byLibrary));
+            }
+            return scenarios;
+        }
+
+        // ---- Mermaid (static, renders in the GitHub file view) -----------------------
+
+        private static string BuildMermaidSection(IReadOnlyList<Scenario> scenarios)
+        {
+            if (scenarios.Count == 0) return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("## Comparison charts").AppendLine();
+            sb.AppendLine("_Lower is better. Charts render in the GitHub file view; the Pages site has interactive versions._").AppendLine();
+
+            foreach (var s in scenarios)
+            {
+                AppendMermaidBar(sb, $"{s.Label} — time (ms)", "Time (ms)",
+                    s.ByLibrary.Select(b => (b.Library, b.TimeMs)));
+
+                var withAlloc = s.ByLibrary.Where(b => b.AllocMb.HasValue)
+                    .OrderBy(b => b.AllocMb).Select(b => (b.Library, b.AllocMb)).ToList();
+                if (withAlloc.Count > 0)
+                    AppendMermaidBar(sb, $"{s.Label} — allocated (MB)", "Allocated (MB)", withAlloc);
+            }
+            return sb.ToString();
+        }
+
+        private static void AppendMermaidBar(StringBuilder sb, string title, string yAxis,
+            IEnumerable<(string Library, double? Value)> data)
+        {
+            var points = data.Where(d => d.Value.HasValue).ToList();
+            if (points.Count == 0) return;
+
+            var labels = string.Join(", ", points.Select(p => $"\"{p.Library}\""));
+            var values = string.Join(", ", points.Select(p =>
+                Math.Round(p.Value!.Value, 2).ToString(CultureInfo.InvariantCulture)));
+
+            sb.AppendLine("```mermaid");
+            sb.AppendLine("xychart-beta");
+            sb.AppendLine($"    title \"{title}\"");
+            sb.AppendLine($"    x-axis [{labels}]");
+            sb.AppendLine($"    y-axis \"{yAxis}\"");
+            sb.AppendLine($"    bar [{values}]");
+            sb.AppendLine("```").AppendLine();
+        }
+
+        // ---- JSON data for the interactive Chart.js page -----------------------------
+
+        private static void WriteChartData(string docsDir, IReadOnlyList<Scenario> scenarios)
+        {
+            var payload = new
+            {
+                updated = DateTime.Now.ToString("u", CultureInfo.InvariantCulture),
+                scenarios = scenarios.Select(s => new
+                {
+                    key = s.Key,
+                    label = s.Label,
+                    libraries = s.ByLibrary.Select(b => b.Library).ToArray(),
+                    timeMs = s.ByLibrary.Select(b => b.TimeMs.HasValue ? Math.Round(b.TimeMs.Value, 2) : (double?)null).ToArray(),
+                    allocMb = s.ByLibrary.Select(b => b.AllocMb.HasValue ? Math.Round(b.AllocMb.Value, 2) : (double?)null).ToArray(),
+                }).ToArray(),
+            };
+
+            var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(docsDir, "results-data.js"), $"window.XLBENCH_DATA = {json};\n");
         }
     }
 }

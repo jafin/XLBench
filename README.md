@@ -19,10 +19,14 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 
 ## Scenarios
 
-**Read** (250,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
+**Read** (200,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
 
 - `OpenWorkbook` — load the workbook into memory (eager-model libraries only).
-- `OpenAndReadAll` — open and read every cell as a string.
+- `OpenAndReadAll` — open, then read every populated cell as a string using each library's
+  idiomatic iteration (e.g. ClosedXML/XLibur `CellsUsed()`, EPPlus `Cells`, NPOI row
+  enumeration, OpenXML/MiniExcel streaming). Random `Cell(row,col)` indexer access is
+  deliberately avoided — it is pathologically slow in some libraries and unrepresentative
+  of real usage.
 
 **Write** (`CreateAndSave` — 50,000 rows of string/number/date + a `SUM` total):
 

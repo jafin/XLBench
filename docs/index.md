@@ -8,7 +8,8 @@ Independent read/write **performance and memory** benchmarks comparing popular .
 libraries, all consumed via NuGet and run on **.NET 10** with
 [BenchmarkDotNet](https://benchmarkdotnet.org/).
 
-## 📊 [View the latest results →](results.md)
+## 📊 [Latest results (tables + static charts) →](results.md)
+## 📈 [Interactive charts →](charts.html)
 
 ## Libraries under test
 
@@ -24,7 +25,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 ## Scenarios
 
 - **Read** — `OpenWorkbook` (load into memory) and `OpenAndReadAll` (open + read every cell)
-  over a 250,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
+  over a 200,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
 

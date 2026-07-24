@@ -29,10 +29,11 @@ public class EpPlusReadBenchmarks
         using var pkg = new ExcelPackage(new MemoryStream(_bytes));
         var ws = pkg.Workbook.Worksheets.First();
 
+        // Iterate the populated cells of the used range (EPPlus's ws.Cells enumerates
+        // only existing cells) rather than random indexer access.
         long checksum = 0;
-        for (var row = 1; row <= TestData.ReadRowCount; row++)
-        for (var col = 1; col <= TestData.ReadColCount; col++)
-            checksum += (ws.Cells[row, col].GetValue<string>() ?? string.Empty).Length;
+        foreach (var cell in ws.Cells)
+            checksum += (cell.GetValue<string>() ?? string.Empty).Length;
         return checksum;
     }
 }
