@@ -45,12 +45,15 @@ jobs:
         env:
           XLBENCH_RESULTS_BASENAME: results-ci
           XLBENCH_CI_BANNER: "⚠️ Generated on a shared GitHub Actions runner — timings are indicative and vary run to run; allocation/memory figures are reliable. Authoritative timings come from a local run: [results.html](results.html)."
+          # Passed via env (not inlined) to avoid script injection.
+          INPUT_FILTER: ${{ github.event.inputs.filter || '*' }}
+          INPUT_JOB: ${{ github.event.inputs.job || 'short' }}
         run: |
-          FILTER="${{ github.event.inputs.filter || '*' }}"
-          JOB="${{ github.event.inputs.job || 'short' }}"
-          ARGS="--filter $FILTER"
-          if [ -n "$JOB" ]; then ARGS="$ARGS --job $JOB"; fi
-          dotnet run -c Release --project src/XLBench -- $ARGS
+          # Build args as an array and quote them so the '*' filter is NOT glob-expanded
+          # by the shell into the repo's file list (which yields "0 benchmarks").
+          args=(--filter "$INPUT_FILTER")
+          [ -n "$INPUT_JOB" ] && args+=(--job "$INPUT_JOB")
+          dotnet run -c Release --project src/XLBench -- "${args[@]}"
 
       - name: Commit indicative results
         run: |
