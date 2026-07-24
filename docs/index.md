@@ -10,6 +10,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 
 ## 📊 [Latest results (tables + static charts) →](results.md)
 ## 📈 [Interactive charts →](charts.html)
+## 🤖 [CI results (indicative) →](results-ci.md)
 
 ## Libraries under test
 

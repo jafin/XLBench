@@ -95,11 +95,17 @@ namespace XLBench
                 return;
             }
 
+            // A configurable output name + optional CI banner let a noisy CI run publish to a
+            // separate results-ci.md without clobbering the authoritative results.md or the
+            // interactive-chart data.
+            var basename = Environment.GetEnvironmentVariable("XLBENCH_RESULTS_BASENAME") ?? "results";
+            var ciBanner = Environment.GetEnvironmentVariable("XLBENCH_CI_BANNER");
+
             // YAML front matter ensures Jekyll processes this page through the theme layout.
-            const string frontMatter =
-                """
+            var frontMatter =
+                $"""
                 ---
-                title: XLBench Results
+                title: XLBench Results{(string.IsNullOrEmpty(ciBanner) ? "" : " (CI)")}
                 ---
                 """;
 
@@ -128,12 +134,17 @@ namespace XLBench
 
             var scenarios = ExtractScenarios(summaryList);
 
-            var outFile = Path.Combine(docsDir, "results.md");
+            var outFile = Path.Combine(docsDir, $"{basename}.md");
             using (var writer = new StreamWriter(outFile, append: false))
             {
                 writer.WriteLine(frontMatter);
                 writer.Write(styleBlock);
                 writer.Write(header);
+                if (!string.IsNullOrEmpty(ciBanner))
+                {
+                    writer.WriteLine($"> {ciBanner}");
+                    writer.WriteLine();
+                }
                 writer.WriteLine("📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.");
                 writer.WriteLine();
                 writer.WriteLine("Each results table (one per test method) is heat-mapped independently on the Pages site (🟩 best → 🟥 worst).");
@@ -162,9 +173,12 @@ namespace XLBench
                 writer.Write(HeatmapScript);
             }
 
-            WriteChartData(docsDir, scenarios);
+            // Only the authoritative page refreshes the interactive-chart data; a CI run
+            // (separate basename) must not overwrite it with noisy numbers.
+            if (basename == "results")
+                WriteChartData(docsDir, scenarios);
 
-            Console.WriteLine($"[XLBench] Published {reports.Count} report(s) + {scenarios.Count} scenario chart(s) to {docsDir}");
+            Console.WriteLine($"[XLBench] Published {Path.GetFileName(outFile)} ({reports.Count} report(s), {scenarios.Count} scenario(s)) to {docsDir}");
         }
 
         // Client-side mermaid loader for the GitHub Pages site. Converts Jekyll's rendered

@@ -1,9 +1,12 @@
-name: benchmark (manual)
+name: benchmark (indicative)
 
-# Optional, on-demand full run. NOTE: GitHub-hosted runners are shared and noisy, so
-# timing numbers from here are less trustworthy than a local run on dedicated hardware.
-# The authoritative published results in docs/ come from local runs committed by a maintainer.
+# Runs the suite on a shared GitHub-hosted runner and publishes the numbers to a SEPARATE
+# docs/results-ci.md page, clearly marked indicative. It never touches the authoritative
+# docs/results.md or the interactive charts — those come from a maintainer's local run.
+# Timings on shared runners are noisy; allocation/memory figures are reliable.
 on:
+  schedule:
+    - cron: '17 6 * * 1'   # weekly, Monday 06:17 UTC
   workflow_dispatch:
     inputs:
       filter:
@@ -11,9 +14,16 @@ on:
         required: false
         default: '*'
       job:
-        description: "Job (blank = full default; 'short' for a faster run)"
+        description: "Job ('short' = faster; blank = full default)"
         required: false
         default: 'short'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   benchmark:
@@ -27,19 +37,30 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # XLibur's SkiaSharp font engine needs fontconfig at runtime on Linux.
       - name: Install native deps
         run: sudo apt-get update && sudo apt-get install -y libfontconfig1
 
-      - name: Run benchmarks
+      - name: Run benchmarks (publishes docs/results-ci.md)
+        env:
+          XLBENCH_RESULTS_BASENAME: results-ci
+          XLBENCH_CI_BANNER: "⚠️ Generated on a shared GitHub Actions runner — timings are indicative and vary run to run; allocation/memory figures are reliable. Authoritative timings come from a local run: [results.html](results.html)."
         run: |
-          ARGS="--filter ${{ github.event.inputs.filter }}"
-          if [ -n "${{ github.event.inputs.job }}" ]; then ARGS="$ARGS --job ${{ github.event.inputs.job }}"; fi
+          FILTER="${{ github.event.inputs.filter || '*' }}"
+          JOB="${{ github.event.inputs.job || 'short' }}"
+          ARGS="--filter $FILTER"
+          if [ -n "$JOB" ]; then ARGS="$ARGS --job $JOB"; fi
           dotnet run -c Release --project src/XLBench -- $ARGS
 
-      - name: Upload results
-        uses: actions/upload-artifact@v4
-        with:
-          name: xlbench-results
-          path: |
-            docs/results.md
-            BenchmarkDotNet.Artifacts/results/**
+      - name: Commit indicative results
+        run: |
+          if git diff --quiet -- docs/results-ci.md; then
+            echo "results-ci.md unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/results-ci.md
+          # [skip ci] keeps build.yml from running on this docs-only commit.
+          git commit -m "docs: refresh indicative CI benchmark results [skip ci]"
+          git push
