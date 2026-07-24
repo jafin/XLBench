@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using XLBench;
@@ -13,6 +14,14 @@ using XLBench.Config;
 //   dotnet run -c Release                       run everything
 //   dotnet run -c Release -- --filter *Read*     only read benchmarks
 //   dotnet run -c Release -- --job short         faster, lower-fidelity run
+// `dotnet run -- versions` prints the resolved library versions and exits (no benchmarks).
+if (args is [{ } first, ..] && first.Equals("versions", StringComparison.OrdinalIgnoreCase))
+{
+    foreach (var (lib, ver) in LibraryVersions.All)
+        Console.WriteLine($"{lib}\t{ver}");
+    return;
+}
+
 var config = BenchmarkConfig.Create();
 
 // BenchmarkDotNet accumulates report files across runs; clear the previous run's results
@@ -116,11 +125,16 @@ namespace XLBench
                 writer.Write(header);
                 writer.WriteLine("📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.");
                 writer.WriteLine();
+                writer.Write(BuildVersionsTable());
                 writer.Write(BuildMermaidSection(scenarios));
                 foreach (var report in reports)
                 {
                     writer.WriteLine();
-                    writer.Write(File.ReadAllText(report));
+                    // kramdown (GitHub Pages) needs a blank line before a table; BenchmarkDotNet
+                    // places its table directly after the closing ``` of the environment block,
+                    // which github.com's GFM tolerates but kramdown renders as literal text.
+                    var content = Regex.Replace(File.ReadAllText(report), "```(\r?\n)(\\|)", "```$1$1$2");
+                    writer.Write(content);
                     writer.WriteLine();
                 }
 
@@ -207,6 +221,20 @@ namespace XLBench
             return scenarios;
         }
 
+        // ---- Library versions --------------------------------------------------------
+
+        private static string BuildVersionsTable()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("## Libraries under test").AppendLine();
+            sb.AppendLine("| Library | Version |");
+            sb.AppendLine("| --- | --- |");
+            foreach (var (lib, ver) in LibraryVersions.All)
+                sb.AppendLine($"| {lib} | {ver} |");
+            sb.AppendLine();
+            return sb.ToString();
+        }
+
         // ---- Mermaid (static, renders in the GitHub file view) -----------------------
 
         private static string BuildMermaidSection(IReadOnlyList<Scenario> scenarios)
@@ -261,6 +289,7 @@ namespace XLBench
             var payload = new
             {
                 updated = DateTime.Now.ToString("u", CultureInfo.InvariantCulture),
+                versions = LibraryVersions.All.ToDictionary(x => x.Library, x => x.Version),
                 scenarios = scenarios.Select(s => new
                 {
                     key = s.Key,

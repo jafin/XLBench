@@ -8,14 +8,17 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 
 ## Libraries under test
 
-| Library | NuGet package | Notes |
-| --- | --- | --- |
-| ClosedXML | `ClosedXML` | High-level cell model |
-| EPPlus | `EPPlus` | Requires a license declaration (non-commercial, set in code) |
-| OpenXML SDK | `DocumentFormat.OpenXml` | Low-level SAX streaming |
-| NPOI | `NPOI` | Java POI port |
-| MiniExcel | `MiniExcel` | Streaming, POCO/dynamic oriented |
-| XLibur | `XLibur.Bundle` | Prerelease; bundles the SkiaSharp font engine (auto-registers) |
+| Library | NuGet package | Version | Notes |
+| --- | --- | --- | --- |
+| ClosedXML | `ClosedXML` | 0.105.0 | High-level cell model |
+| EPPlus | `EPPlus` | 8.6.2 | Requires a license declaration (non-commercial, set in code) |
+| OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 | Low-level SAX streaming |
+| NPOI | `NPOI` | 2.8.0 | Java POI port |
+| MiniExcel | `MiniExcel` | 1.45.0 | Streaming, POCO/dynamic oriented |
+| XLibur | `XLibur.Bundle` | 0.105.1-rc.137 | Prerelease; bundles the SkiaSharp font engine (auto-registers) |
+
+Versions are the pinned NuGet package versions (see `src/XLBench/XLBench.csproj`); the
+generated `docs/results.md` reports the exact resolved versions from each run via reflection.
 
 ## Scenarios
 

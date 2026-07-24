@@ -11,6 +11,17 @@ columns as the most portable signal across machines. Regenerate locally with
 
 📈 **[Interactive charts](charts.html)** (GitHub Pages). Static charts and the full tables follow.
 
+## Libraries under test
+
+| Library | Version |
+| --- | --- |
+| ClosedXML | 0.105.0 |
+| EPPlus | 8.6.2 |
+| OpenXML SDK | 3.5.1 |
+| NPOI | 2.8.0 |
+| MiniExcel | 1.45.0 |
+| XLibur | 0.105.1-rc.137 |
+
 ## Comparison charts
 
 _Lower is better. Charts render in the GitHub file view; the Pages site has interactive versions._
@@ -106,6 +117,7 @@ Job=ShortRun  IterationCount=3  LaunchCount=1
 WarmupCount=3  
 
 ```
+
 | Library     | Namespace                | Type                     | Method         | Mean         | Error        | StdDev     | Gen0        | Gen1        | Gen2       | Allocated  |
 |------------ |------------------------- |------------------------- |--------------- |-------------:|-------------:|-----------:|------------:|------------:|-----------:|-----------:|
 | ClosedXML   | XLBench.Benchmarks.Read  | ClosedXmlReadBenchmarks  | OpenWorkbook   |  7,342.75 ms |    342.10 ms |  18.752 ms | 160000.0000 |  50000.0000 |  3000.0000 | 2609.62 MB |

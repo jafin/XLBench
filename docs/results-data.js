@@ -1,5 +1,13 @@
 window.XLBENCH_DATA = {
   "updated": "2026-07-24 10:57:07Z",
+  "versions": {
+    "ClosedXML": "0.105.0",
+    "EPPlus": "8.6.2",
+    "OpenXML SDK": "3.5.1",
+    "NPOI": "2.8.0",
+    "MiniExcel": "1.45.0",
+    "XLibur": "0.105.1-rc.137"
+  },
   "scenarios": [
     {
       "key": "OpenWorkbook",

@@ -49,6 +49,7 @@
       <a href="./">project overview</a>.
     </p>
     <p class="muted" id="updated"></p>
+    <p class="muted" id="versions"></p>
 
     <div class="controls">
       <label><input type="checkbox" id="logScale"> Logarithmic Y-axis</label>
@@ -72,6 +73,10 @@
       }
       if (data.updated) {
         document.getElementById('updated').textContent = 'Last run: ' + data.updated;
+      }
+      if (data.versions) {
+        document.getElementById('versions').textContent =
+          'Versions: ' + Object.entries(data.versions).map(([k, v]) => `${k} ${v}`).join('  ·  ');
       }
 
       // Stable color per library across every chart.
