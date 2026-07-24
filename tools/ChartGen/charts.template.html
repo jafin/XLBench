@@ -91,6 +91,7 @@
   .row .rlabel{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;}
   .row .name{font-size:12.5px; font-weight:550; color:var(--text-primary);}
   .row .val{font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums;}
+  .row .val .delta{color:var(--muted); font-weight:500;}
   .track{position:relative; height:12px; background:var(--track); border-radius:4px;}
   .fill{position:absolute; left:0; top:0; height:100%; border-radius:4px; min-width:3px;
         transition:width .45s cubic-bezier(.22,.61,.36,1);}
@@ -267,6 +268,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       if(!rows.length) return;
       const max = Math.max(...rows.map(valOf));
       const best = rows[0];
+      const bestV = valOf(best);
       const panel = document.createElement('div');
       panel.className = 'panel';
       panel.innerHTML =
@@ -277,6 +279,11 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       const rowsEl = panel.querySelector('.rows');
       rows.forEach(d=>{
         const v = valOf(d);
+        // Percentage worse than this operation's best (leanest/fastest). Best row shows none.
+        const deltaPct = bestV > 0 ? (v/bestV - 1)*100 : 0;
+        const deltaStr = deltaPct >= 0.05
+          ? ` <span class="delta">(+${deltaPct >= 10 ? Math.round(deltaPct) : deltaPct.toFixed(1)}%)</span>`
+          : '';
         const pct = Math.max((v/max)*100, 2.2);
         let whisker = '';
         if(measure==='time' && nOK(d.terr)){
@@ -287,7 +294,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
         const row = document.createElement('div');
         row.className = 'row';
         row.innerHTML =
-          `<div class="rlabel"><span class="name">${d.lib}</span><span class="val">${fmtVal(v)}</span></div>
+          `<div class="rlabel"><span class="name">${d.lib}</span><span class="val">${fmtVal(v)}${deltaStr}</span></div>
            <div class="track"><div class="fill" style="width:${pct}%; background:${COLORS[d.lib]}"></div>${whisker}</div>`;
         attachTip(row, d);
         rowsEl.appendChild(row);
