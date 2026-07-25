@@ -8,7 +8,6 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <Company>XLBench</Company>
-    <!-- XLibur is currently published as a prerelease (rc) package. -->
     <RestoreEnablePackagePruning>false</RestoreEnablePackagePruning>
   </PropertyGroup>
 

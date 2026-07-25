@@ -6,6 +6,7 @@
     <RootNamespace>XLBench</RootNamespace>
     <!-- BenchmarkDotNet must build in Release to produce trustworthy numbers. -->
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,13 +18,13 @@
   <!-- Excel libraries under test — all referenced via NuGet only. -->
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
-    <PackageReference Include="EPPlus" Version="8.6.2" />
+    <PackageReference Include="EPPlus" Version="8.6.3" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
     <PackageReference Include="NPOI" Version="2.8.0" />
     <PackageReference Include="MiniExcel" Version="1.45.0" />
-    <!-- XLibur meta-package (prerelease). Pulls in XLibur + XLibur.Fonts.SkiaSharp.
+    <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
-    <PackageReference Include="XLibur.Bundle" Version="0.105.1-rc.151" />
+    <PackageReference Include="XLibur.Bundle" Version="0.106.0" />
   </ItemGroup>
 
 </Project>
