@@ -10,16 +10,18 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 
 | Library | NuGet package | Version | Notes |
 | --- | --- | --- | --- |
-| ClosedXML | `ClosedXML` | 0.105.1 | High-level cell model |
-| EPPlus | `EPPlus` | 8.6.3 | Requires a license declaration (non-commercial, set in code) |
-| OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 | Low-level SAX streaming |
-| NPOI | `NPOI` | 2.8.0 | Java POI port |
-| MiniExcel | `MiniExcel` | 1.45.0 | Streaming, POCO/dynamic oriented |
-| XLibur | `XLibur.Bundle` | 0.106.1-beta.80 | Prerelease; bundles the SkiaSharp font engine (auto-registers). Ahead of stable 0.106.0 for the chart fixes the report scenario needs |
-| IronXL | `IronXL.Excel` | 2026.7.2 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
+| [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 | High-level cell model |
+| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.6.3 | Requires a license declaration (non-commercial, set in code) |
+| [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming |
+| [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port |
+| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.106.1-beta.80 | Prerelease; bundles the SkiaSharp font engine (auto-registers). Ahead of stable 0.106.0 for the chart fixes the report scenario needs |
+| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.7.2 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
 
-Versions are the pinned NuGet package versions (see `src/XLBench/XLBench.csproj`); the
-generated `docs/results.md` reports the exact resolved versions from each run via reflection.
+Library links point at each project's source repository, except IronXL, which is closed source —
+that one goes to the product page. Versions are the pinned NuGet package versions (see
+`src/XLBench/XLBench.csproj`); the generated `docs/results.md` reports the exact resolved
+versions from each run via reflection.
 
 ## Scenarios
 
