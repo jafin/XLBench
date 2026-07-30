@@ -230,6 +230,36 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   package, so every XLibur number — read and write included — comes from the prerelease, not
   from the latest stable release the other libraries are on.
 
+## Best-effort implementations
+
+Each library is driven the way its own documentation and idiomatic samples suggest, and every
+benchmark was written to give that library its best shot at the scenario — streaming where a
+streaming API exists, bulk or idiomatic iteration over per-cell indexer access, the cheapest
+correct way to express each feature. Where a library forced a workaround, it is documented
+above rather than quietly folded into the timing.
+
+None of that makes these implementations authoritative. Knowing one of these libraries well is
+not the same as knowing all seven well, the fastest path through an API is not always the
+documented one, and a maintainer or heavy user will often spot in seconds something that took a
+wrong turn here. **If a benchmark is doing something clumsy, or missing an API that would
+produce the same result with less time or fewer allocations, please open a PR.**
+
+A change is easiest to accept when it:
+
+- **Produces the same result.** Same cells, same styles, same chart, same validity — a faster
+  number that quietly drops a feature moves the library in the capability matrix, not the
+  timings.
+- **Uses public API only.** No reflection, no internals, no vendored source. The benchmark
+  should reflect what a consumer of the NuGet package can actually write.
+- **Says which version it needs.** If the better API only exists in a newer release, note it —
+  the pinned versions are deliberate (see XLibur above).
+- **Comes with a re-run.** Regenerate `docs/` locally (`./scripts/run-benchmarks.ps1`) and commit
+  it, since CI numbers are not authoritative. IronXL will replay from `snapshots/` unless you
+  hold a key, which is fine.
+
+Corrections to the prose count too - if a capability-matrix cell or one of the API notes is
+wrong or out of date, an issue is enough; you don't have to write the code.
+
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (pinned via `global.json`).
