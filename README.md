@@ -37,19 +37,19 @@ generated `docs/results.md` reports the exact resolved versions from each run vi
 
 **Report** (`CreateStockReport` — a small sheet exercising *features* rather than volume):
 
-- Imports `src/XLBench/Data/stock_data.json` (20 tickers × 52 weekly closes) and pivots it
-  into a 53-row × 22-column sheet: a header row plus 52 week rows, and two label columns
-  (`Week`, `Week Ending`) followed by one price column per symbol — a 52 × 20 price block
-  in `C2:V53`.
+- Imports `src/XLBench/Data/stock_data.json` (20 tickers × 260 weekly closes — five years,
+  5,200 records) and pivots it into a 261-row × 22-column sheet: a header row plus 260 week
+  rows, and two label columns (`Week`, `Week Ending`) followed by one price column per symbol
+  — a 260 × 20 price block in `C2:V261`.
 - Adds **conditional formatting** over that price block as one pair of relative-reference
   expression rules — green when a week closes above the prior week, red when below. The
-  applied range is `C3:V53`: week 1 is excluded, having no prior week to compare against.
+  applied range is `C3:V261`: week 1 is excluded, having no prior week to compare against.
 - **Auto-fits** the week-ending column to its contents. This is the one step whose cost is
   text measurement rather than XML assembly, so it separates libraries that ship a font engine
   from the raw SDK, which has none.
 - Adds a **line chart** plotting all 20 symbols against the week-ending dates.
 
-Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 1,166 cells the
+Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 5,742 cells the
 timings are dominated by how each library models styles, rules and DrawingML, not by
 throughput. Its real output is the capability matrix below.
 
@@ -67,7 +67,7 @@ that skips a feature is doing strictly less work.
 | ClosedXML | ✅ | ✅ | ✅ | ❌ | ✅ schema-clean |
 | EPPlus | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
 | OpenXML SDK | ✅ | ⚠️ manual | ⚠️ estimated | ⚠️ manual | ✅ schema-clean |
-| NPOI | ✅ | ✅ | ✅ | ⚠️ no title | ✅ schema-clean |
+| NPOI | ✅ | ✅ | ✅ | ✅ | ⚠️ 1 schema error |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ | — not benchmarked |
 | XLibur | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
 
@@ -85,12 +85,16 @@ and XLibur are each asked for one explicitly.
   is nothing to ask for a fitted width. The benchmark computes one from the longest string the
   column holds and writes an explicit `<col width=…>`. That is an estimate, not auto-fit, and it
   is also why its `CreateStockReport` number skips the text-shaping work the other four do.
-- **NPOI — chart title omitted.** `XDDFChart.SetTitleText` serializes the title body as
-  `<a:rich>` where the chart schema requires `<c:rich>`, producing a file Excel offers to
-  repair. `CT_Tx.Write` passes the `a` prefix unconditionally, so no public API avoids it;
-  the chart is emitted without a title so the artifact stays openable. Separately,
-  `XDDFLineChartData.SetGrouping` throws `NullReferenceException` on a chart NPOI itself
-  created, so `<c:grouping>` is set through the underlying CT model.
+- **NPOI — titled chart, at the cost of a schema-invalid artifact.** `XDDFChart.SetTitleText`
+  serializes the title body as `<a:rich>` where the chart schema requires `<c:rich>`, and
+  `CT_Tx.Write` passes the `a` prefix unconditionally, so no public API avoids it. The title is
+  set anyway — so NPOI does the same work as the other libraries and its timing stays
+  comparable — which leaves `output/stock-report-npoi.xlsx` with one validation error, and
+  Excel may offer to repair it. Dropping `SetTitleText` (or re-adding
+  `SetAutoTitleDeleted(true)`, which discards the title NPOI just built) restores a clean file
+  and an untitled chart. Separately, `XDDFLineChartData.SetGrouping` throws
+  `NullReferenceException` on a chart NPOI itself created, so `<c:grouping>` is set through the
+  underlying CT model.
 - **MiniExcel — excluded.** It has neither conditional formatting nor charts, so it could only
   run the data-import third of the scenario. Timing that against libraries doing all three
   would be actively misleading, so it is left out rather than listed as a fast result.
@@ -125,8 +129,8 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   any measured region — the deserialization is identical for every library and would only add
   the same constant to each result.
 - Report timings are only comparable within the capability matrix above. ClosedXML emits no
-  chart, NPOI no chart title, and the OpenXML SDK estimates its column width instead of
-  measuring text, so each does less work than a full run of the scenario.
+  chart, and the OpenXML SDK estimates its column width instead of measuring text, so each
+  does less work than a full run of the scenario.
 - Auto-fit widths legitimately differ between libraries, because each measures text with its own
   font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, NPOI 11.16, and the
   OpenXML SDK's character-count estimate 11.71. A like-for-like width was not forced — the point

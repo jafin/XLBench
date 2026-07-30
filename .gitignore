@@ -34,6 +34,10 @@ BenchmarkDotNet.Artifacts/
 # Report-scenario artifacts (.xlsx kept after each run for manual review, overwritten next run)
 output/
 
+# JetBrains Rider / ReSharper per-user IDE state
+.idea/
+*.sln.DotSettings.user
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 

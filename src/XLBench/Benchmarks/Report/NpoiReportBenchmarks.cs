@@ -144,13 +144,14 @@ public class NpoiReportBenchmarks
 
         var chart = drawing.CreateChart(anchor);
 
-        // No chart title. NPOI 2.8.0's SetTitleText serializes the rich-text body as <a:rich>
-        // (DrawingML main namespace) where the chart schema requires <c:rich>; CT_Tx.Write hands
-        // the CT_TextBody its own "a" prefix unconditionally, so no public API avoids it. The
-        // resulting file makes Excel prompt to repair, which would defeat keeping these artifacts
-        // around for review — so the title is left off and the gap is recorded in the README's
-        // capability matrix instead.
-        chart.SetAutoTitleDeleted(true);
+        // Titling the chart costs a schema violation, and it is taken deliberately: NPOI 2.8.0
+        // serializes the rich-text body as <a:rich> (DrawingML main namespace) where the chart
+        // schema requires <c:rich>, and CT_Tx.Write hands the CT_TextBody its own "a" prefix
+        // unconditionally, so no public API avoids it. Setting it anyway keeps NPOI doing the
+        // same work as every other library here, which is what makes the timing comparable —
+        // the price is that output/stock-report-npoi.xlsx carries one validation error and
+        // Excel may offer to repair it. Removing this line restores a clean, untitled artifact.
+        chart.SetTitleText(ReportLayout.ChartTitle);
         chart.GetOrAddLegend().Position = LegendPosition.Right;
 
         var categoryAxis = chart.CreateCategoryAxis(AxisPosition.Bottom);

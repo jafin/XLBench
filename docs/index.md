@@ -29,10 +29,10 @@ libraries, all consumed via NuGet and run on **.NET 10** with
   over a 100,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
-- **Report** — `CreateStockReport` imports 20 tickers × 52 weekly closing prices from JSON,
-  lays them out as a 53 × 22 sheet, conditionally formats every price green or red against the
-  prior week's close, auto-fits the week-ending column, and plots all 20 symbols as a line
-  chart. Feature-bound, not volume-bound.
+- **Report** — `CreateStockReport` imports 20 tickers × 260 weekly closing prices from JSON
+  (five years, 5,200 records), lays them out as a 261 × 22 sheet, conditionally formats every
+  price green or red against the prior week's close, auto-fits the week-ending column, and
+  plots all 20 symbols as a line chart. Feature-bound, not volume-bound.
 
 ## Report scenario — capability matrix
 
@@ -44,7 +44,7 @@ less work, so read its timing against this table.
 | ClosedXML | ✅ | ✅ | ✅ | ❌ no public API |
 | EPPlus | ✅ | ✅ | ✅ | ✅ |
 | OpenXML SDK | ✅ | ⚠️ hand-authored | ⚠️ estimated width | ⚠️ hand-authored |
-| NPOI | ✅ | ✅ | ✅ | ⚠️ title omitted |
+| NPOI | ✅ | ✅ | ✅ | ⚠️ titled, invalid XML |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
 
