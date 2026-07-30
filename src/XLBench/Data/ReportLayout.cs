@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace XLBench.Data;
@@ -74,6 +75,33 @@ public static class ReportLayout
     public const int ChartFirstRow = 1;
     public const int ChartColSpan = 14;
     public const int ChartRowSpan = 30;
+
+    public const string WeekEndingHeader = "Week Ending";
+
+    /// <summary>
+    /// Fallback width for the week-ending column, in Excel's "number of characters" unit, for
+    /// libraries with no auto-fit of their own.
+    /// </summary>
+    /// <remarks>
+    /// Only the OpenXML SDK benchmark uses this. The other four measure the rendered text with a
+    /// font engine; the raw SDK has none, so the closest honest equivalent is to size the column
+    /// from the longest string it has to hold and write an explicit width. That is an estimate,
+    /// not auto-fit — the widths will not match the other libraries' to the pixel.
+    /// </remarks>
+    public static double EstimatedWeekEndingWidth
+    {
+        get
+        {
+            // DateFormat is an Excel format code ("yyyy-mm-dd"), not a .NET one — mm means minutes
+            // to DateTime.ToString. The .NET equivalent of the same rendering is used here.
+            var longest = WeekEndingHeader.Length;
+            foreach (var d in StockData.WeekEndings)
+                longest = Math.Max(longest, d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture).Length);
+
+            // Excel pads a column by roughly 0.71 characters beyond the widest content.
+            return longest + 0.71;
+        }
+    }
 
     /// <summary>Converts a 1-based column index to its A1 column letters (1 -> A, 27 -> AA).</summary>
     public static string ColumnLetter(int column)

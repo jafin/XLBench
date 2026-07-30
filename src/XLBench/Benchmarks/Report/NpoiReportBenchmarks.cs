@@ -69,7 +69,7 @@ public class NpoiReportBenchmarks
         // NPOI rows/cols are 0-based; the layout constants are 1-based A1 positions.
         var header = sheet.CreateRow(ReportLayout.HeaderRow - 1);
         SetString(header, ReportLayout.WeekNoCol - 1, "Week", headerStyle);
-        SetString(header, ReportLayout.WeekEndingCol - 1, "Week Ending", headerStyle);
+        SetString(header, ReportLayout.WeekEndingCol - 1, ReportLayout.WeekEndingHeader, headerStyle);
         for (var s = 0; s < StockData.SymbolCount; s++)
             SetString(header, ReportLayout.FirstPriceCol - 1 + s, StockData.Symbols[s], headerStyle);
 
@@ -90,6 +90,10 @@ public class NpoiReportBenchmarks
                 cell.CellStyle = priceStyle;
             }
         }
+
+        // Auto-fit the week-ending column. This measures the rendered text with a font engine,
+        // so it is the one part of the scenario whose cost is text shaping rather than XML.
+        sheet.AutoSizeColumn(ReportLayout.WeekEndingCol - 1);
     }
 
     private static void SetString(IRow row, int col, string value, ICellStyle style)

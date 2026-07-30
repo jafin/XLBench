@@ -58,7 +58,7 @@ public class EpPlusReportBenchmarks
     private static void WriteData(ExcelWorksheet ws)
     {
         ws.Cells[ReportLayout.HeaderRow, ReportLayout.WeekNoCol].Value = "Week";
-        ws.Cells[ReportLayout.HeaderRow, ReportLayout.WeekEndingCol].Value = "Week Ending";
+        ws.Cells[ReportLayout.HeaderRow, ReportLayout.WeekEndingCol].Value = ReportLayout.WeekEndingHeader;
         for (var s = 0; s < StockData.SymbolCount; s++)
             ws.Cells[ReportLayout.HeaderRow, ReportLayout.FirstPriceCol + s].Value = StockData.Symbols[s];
 
@@ -81,6 +81,10 @@ public class EpPlusReportBenchmarks
             .Style.Numberformat.Format = ReportLayout.DateFormat;
         ws.Cells[ReportLayout.FirstDataRow, ReportLayout.FirstPriceCol, ReportLayout.LastDataRow, ReportLayout.LastPriceCol]
             .Style.Numberformat.Format = ReportLayout.PriceFormat;
+
+        // Auto-fit the week-ending column. This measures the rendered text with a font engine,
+        // so it is the one part of the scenario whose cost is text shaping rather than XML.
+        ws.Column(ReportLayout.WeekEndingCol).AutoFit();
     }
 
     private static void AddConditionalFormatting(ExcelWorksheet ws)

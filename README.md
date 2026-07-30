@@ -10,7 +10,7 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 
 | Library | NuGet package | Version | Notes |
 | --- | --- | --- | --- |
-| ClosedXML | `ClosedXML` | 0.105.0 | High-level cell model |
+| ClosedXML | `ClosedXML` | 0.105.1 | High-level cell model |
 | EPPlus | `EPPlus` | 8.6.3 | Requires a license declaration (non-commercial, set in code) |
 | OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 | Low-level SAX streaming |
 | NPOI | `NPOI` | 2.8.0 | Java POI port |
@@ -44,6 +44,9 @@ generated `docs/results.md` reports the exact resolved versions from each run vi
 - Adds **conditional formatting** over that price block as one pair of relative-reference
   expression rules — green when a week closes above the prior week, red when below. The
   applied range is `C3:V53`: week 1 is excluded, having no prior week to compare against.
+- **Auto-fits** the week-ending column to its contents. This is the one step whose cost is
+  text measurement rather than XML assembly, so it separates libraries that ship a font engine
+  from the raw SDK, which has none.
 - Adds a **line chart** plotting all 20 symbols against the week-ending dates.
 
 Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 1,166 cells the
@@ -59,14 +62,14 @@ per scenario.
 Not every library can express this scenario. Read the timings alongside this table: a library
 that skips a feature is doing strictly less work.
 
-| Library | Import + grid | Conditional formatting | Chart | Artifact valid? |
-| --- | :-: | :-: | :-: | --- |
-| ClosedXML | ✅ | ✅ | ❌ | ✅ schema-clean |
-| EPPlus | ✅ | ✅ | ✅ | ✅ schema-clean |
-| OpenXML SDK | ✅ | ⚠️ manual | ⚠️ manual | ✅ schema-clean |
-| NPOI | ✅ | ✅ | ⚠️ no title | ✅ schema-clean |
-| MiniExcel | ✅ | ❌ | ❌ | — not benchmarked |
-| XLibur | ✅ | ✅ | ✅ | ✅ schema-clean |
+| Library | Import + grid | Conditional formatting | Auto-fit column | Chart | Artifact valid? |
+| --- | :-: | :-: | :-: | :-: | --- |
+| ClosedXML | ✅ | ✅ | ✅ | ❌ | ✅ schema-clean |
+| EPPlus | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
+| OpenXML SDK | ✅ | ⚠️ manual | ⚠️ estimated | ⚠️ manual | ✅ schema-clean |
+| NPOI | ✅ | ✅ | ✅ | ⚠️ no title | ✅ schema-clean |
+| MiniExcel | ✅ | ❌ | ❌ | ❌ | — not benchmarked |
+| XLibur | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
 
 All four charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK
 and XLibur are each asked for one explicitly.
@@ -78,6 +81,10 @@ and XLibur are each asked for one explicitly.
   the differential formats, the `conditionalFormatting` element, the drawing anchor and the
   entire chart part are authored element by element. That authoring cost — not the runtime —
   is the finding.
+- **OpenXML SDK — no auto-fit.** The raw SDK ships no font or text-measurement engine, so there
+  is nothing to ask for a fitted width. The benchmark computes one from the longest string the
+  column holds and writes an explicit `<col width=…>`. That is an estimate, not auto-fit, and it
+  is also why its `CreateStockReport` number skips the text-shaping work the other four do.
 - **NPOI — chart title omitted.** `XDDFChart.SetTitleText` serializes the title body as
   `<a:rich>` where the chart schema requires `<c:rich>`, producing a file Excel offers to
   repair. `CT_Tx.Write` passes the `a` prefix unconditionally, so no public API avoids it;
@@ -118,7 +125,12 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   any measured region — the deserialization is identical for every library and would only add
   the same constant to each result.
 - Report timings are only comparable within the capability matrix above. ClosedXML emits no
-  chart and NPOI no chart title, so both do less work than the rest.
+  chart, NPOI no chart title, and the OpenXML SDK estimates its column width instead of
+  measuring text, so each does less work than a full run of the scenario.
+- Auto-fit widths legitimately differ between libraries, because each measures text with its own
+  font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, NPOI 11.16, and the
+  OpenXML SDK's character-count estimate 11.71. A like-for-like width was not forced — the point
+  is what each library does when simply asked to fit the column.
 - XLibur is pinned to a prerelease (`0.106.1-beta.80`) rather than stable `0.106.0`, because the
   stable build cannot produce a valid chart for this scenario. That pin applies to the whole
   package, so every XLibur number — read and write included — comes from the prerelease, not

@@ -45,7 +45,7 @@ public class ClosedXmlReportBenchmarks
     private static void WriteData(IXLWorksheet ws)
     {
         ws.Cell(ReportLayout.HeaderRow, ReportLayout.WeekNoCol).Value = "Week";
-        ws.Cell(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol).Value = "Week Ending";
+        ws.Cell(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol).Value = ReportLayout.WeekEndingHeader;
         for (var s = 0; s < StockData.SymbolCount; s++)
             ws.Cell(ReportLayout.HeaderRow, ReportLayout.FirstPriceCol + s).Value = StockData.Symbols[s];
 
@@ -68,6 +68,10 @@ public class ClosedXmlReportBenchmarks
                 cell.Style.NumberFormat.Format = ReportLayout.PriceFormat;
             }
         }
+
+        // Auto-fit the week-ending column. This measures the rendered text with a font engine,
+        // so it is the one part of the scenario whose cost is text shaping rather than XML.
+        ws.Column(ReportLayout.WeekEndingCol).AdjustToContents();
     }
 
     private static void AddConditionalFormatting(IXLWorksheet ws)

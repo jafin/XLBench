@@ -16,7 +16,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 
 | Library | Package | Version |
 | --- | --- | --- |
-| ClosedXML | `ClosedXML` | 0.105.0 |
+| ClosedXML | `ClosedXML` | 0.105.1 |
 | EPPlus | `EPPlus` | 8.6.3 |
 | OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 |
 | NPOI | `NPOI` | 2.8.0 |
@@ -30,22 +30,23 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
 - **Report** — `CreateStockReport` imports 20 tickers × 52 weekly closing prices from JSON,
-  lays them out as a 52 × 20 grid, conditionally formats every price green or red against the
-  prior week's close, and plots all 20 symbols as a line chart. Feature-bound, not volume-bound.
+  lays them out as a 53 × 22 sheet, conditionally formats every price green or red against the
+  prior week's close, auto-fits the week-ending column, and plots all 20 symbols as a line
+  chart. Feature-bound, not volume-bound.
 
 ## Report scenario — capability matrix
 
 Not every library can express this scenario; a library that skips a feature is doing strictly
 less work, so read its timing against this table.
 
-| Library | Import + grid | Conditional formatting | Chart |
-| --- | :-: | :-: | :-: |
-| ClosedXML | ✅ | ✅ | ❌ no public API |
-| EPPlus | ✅ | ✅ | ✅ |
-| OpenXML SDK | ✅ | ⚠️ hand-authored | ⚠️ hand-authored |
-| NPOI | ✅ | ✅ | ⚠️ title omitted |
-| MiniExcel | ✅ | ❌ | ❌ (not benchmarked) |
-| XLibur | ✅ | ✅ | ✅ |
+| Library | Import + grid | Conditional formatting | Auto-fit column | Chart |
+| --- | :-: | :-: | :-: | :-: |
+| ClosedXML | ✅ | ✅ | ✅ | ❌ no public API |
+| EPPlus | ✅ | ✅ | ✅ | ✅ |
+| OpenXML SDK | ✅ | ⚠️ hand-authored | ⚠️ estimated width | ⚠️ hand-authored |
+| NPOI | ✅ | ✅ | ✅ | ⚠️ title omitted |
+| MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
+| XLibur | ✅ | ✅ | ✅ | ✅ |
 
 ## Caveats
 
