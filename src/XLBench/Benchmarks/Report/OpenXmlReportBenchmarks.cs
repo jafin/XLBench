@@ -71,8 +71,10 @@ public class OpenXmlReportBenchmarks
         var wsPart = wbPart.AddNewPart<WorksheetPart>();
         var worksheet = new Worksheet();
 
-        // Schema order inside <worksheet> is fixed: sheetData, then conditionalFormatting,
-        // then drawing. Appending out of order produces a file Excel refuses to open.
+        // Schema order inside <worksheet> is fixed: cols, then sheetData, then
+        // conditionalFormatting, then drawing. Appending out of order produces a file Excel
+        // refuses to open.
+        worksheet.Append(BuildColumns());
         worksheet.Append(BuildSheetData());
         worksheet.Append(BuildConditionalFormatting());
 
@@ -152,6 +154,26 @@ public class OpenXmlReportBenchmarks
 
     private static string Argb((byte R, byte G, byte B) c) => $"FF{ReportLayout.Hex(c)}";
 
+    // ---- Columns -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Widens the week-ending column to fit its contents.
+    /// </summary>
+    /// <remarks>
+    /// This is *not* auto-fit. The raw SDK has no font or text-measurement engine, so there is
+    /// nothing to ask — the width has to be computed and written explicitly. The estimate comes
+    /// from the longest string the column holds; the four libraries that do measure text will
+    /// land on slightly different widths.
+    /// </remarks>
+    private static Columns BuildColumns() =>
+        new(new Column
+        {
+            Min = (uint)ReportLayout.WeekEndingCol,
+            Max = (uint)ReportLayout.WeekEndingCol,
+            Width = ReportLayout.EstimatedWeekEndingWidth,
+            CustomWidth = true,
+        });
+
     // ---- Sheet data --------------------------------------------------------------------
 
     private static SheetData BuildSheetData()
@@ -160,7 +182,7 @@ public class OpenXmlReportBenchmarks
 
         var header = new Row { RowIndex = (uint)ReportLayout.HeaderRow };
         header.Append(TextCell(ReportLayout.HeaderRow, ReportLayout.WeekNoCol, "Week"));
-        header.Append(TextCell(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol, "Week Ending"));
+        header.Append(TextCell(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol, ReportLayout.WeekEndingHeader));
         for (var s = 0; s < StockData.SymbolCount; s++)
             header.Append(TextCell(ReportLayout.HeaderRow, ReportLayout.FirstPriceCol + s, StockData.Symbols[s]));
         sheetData.Append(header);
