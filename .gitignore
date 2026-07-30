@@ -31,6 +31,9 @@ artifacts/
 # BenchmarkDotNet raw output (curated markdown is published under docs/ instead)
 BenchmarkDotNet.Artifacts/
 
+# Report-scenario artifacts (.xlsx kept after each run for manual review, overwritten next run)
+output/
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 

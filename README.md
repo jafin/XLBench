@@ -11,11 +11,11 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | Library | NuGet package | Version | Notes |
 | --- | --- | --- | --- |
 | ClosedXML | `ClosedXML` | 0.105.0 | High-level cell model |
-| EPPlus | `EPPlus` | 8.6.2 | Requires a license declaration (non-commercial, set in code) |
+| EPPlus | `EPPlus` | 8.6.3 | Requires a license declaration (non-commercial, set in code) |
 | OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 | Low-level SAX streaming |
 | NPOI | `NPOI` | 2.8.0 | Java POI port |
 | MiniExcel | `MiniExcel` | 1.45.0 | Streaming, POCO/dynamic oriented |
-| XLibur | `XLibur.Bundle` | 0.105.1-rc.151 | Prerelease; bundles the SkiaSharp font engine (auto-registers) |
+| XLibur | `XLibur.Bundle` | 0.106.1-beta.80 | Prerelease; bundles the SkiaSharp font engine (auto-registers). Ahead of stable 0.106.0 for the chart fixes the report scenario needs |
 
 Versions are the pinned NuGet package versions (see `src/XLBench/XLBench.csproj`); the
 generated `docs/results.md` reports the exact resolved versions from each run via reflection.
@@ -35,9 +35,75 @@ generated `docs/results.md` reports the exact resolved versions from each run vi
 
 - Each library builds and serializes the sheet to a `MemoryStream`.
 
+**Report** (`CreateStockReport` — a small sheet exercising *features* rather than volume):
+
+- Imports `src/XLBench/Data/stock_data.json` (20 tickers × 52 weekly closes) and pivots it
+  into a 52-row × 20-column grid: `Week`, `Week Ending`, then one price column per symbol.
+- Adds **conditional formatting** across the whole price block (`C3:V53`) as one pair of
+  relative-reference expression rules — green when a week closes above the prior week, red
+  when below. Week 1 is excluded; it has no prior week to compare against.
+- Adds a **line chart** plotting all 20 symbols against the week-ending dates.
+
+Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 1,166 cells the
+timings are dominated by how each library models styles, rules and DrawingML, not by
+throughput. Its real output is the capability matrix below.
+
 Every benchmark uses `[MemoryDiagnoser]`, so allocations and Gen0/1/2 collections are
 reported alongside timings. A joined summary adds a **Library** column so libraries line up
 per scenario.
+
+### Report scenario — capability matrix
+
+Not every library can express this scenario. Read the timings alongside this table: a library
+that skips a feature is doing strictly less work.
+
+| Library | Import + grid | Conditional formatting | Chart | Artifact valid? |
+| --- | :-: | :-: | :-: | --- |
+| ClosedXML | ✅ | ✅ | ❌ | ✅ schema-clean |
+| EPPlus | ✅ | ✅ | ✅ | ✅ schema-clean |
+| OpenXML SDK | ✅ | ⚠️ manual | ⚠️ manual | ✅ schema-clean |
+| NPOI | ✅ | ✅ | ⚠️ no title | ✅ schema-clean |
+| MiniExcel | ✅ | ❌ | ❌ | — not benchmarked |
+| XLibur | ✅ | ✅ | ✅ | ✅ schema-clean |
+
+All four charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK
+and XLibur are each asked for one explicitly.
+
+- **ClosedXML — no charts.** 0.105.0 ships internal `XLChart`/`XLCharts` types, but nothing
+  exposes them: `IXLWorksheet` has no `Charts` member, so there is no public API to add one.
+  Its `CreateStockReport` number therefore covers data + conditional formatting only.
+- **OpenXML SDK — everything by hand.** It can do the whole scenario, but the stylesheet,
+  the differential formats, the `conditionalFormatting` element, the drawing anchor and the
+  entire chart part are authored element by element. That authoring cost — not the runtime —
+  is the finding.
+- **NPOI — chart title omitted.** `XDDFChart.SetTitleText` serializes the title body as
+  `<a:rich>` where the chart schema requires `<c:rich>`, producing a file Excel offers to
+  repair. `CT_Tx.Write` passes the `a` prefix unconditionally, so no public API avoids it;
+  the chart is emitted without a title so the artifact stays openable. Separately,
+  `XDDFLineChartData.SetGrouping` throws `NullReferenceException` on a chart NPOI itself
+  created, so `<c:grouping>` is set through the underlying CT model.
+- **MiniExcel — excluded.** It has neither conditional formatting nor charts, so it could only
+  run the data-import third of the scenario. Timing that against libraries doing all three
+  would be actively misleading, so it is left out rather than listed as a fast result.
+- **XLibur — pinned to a prerelease for this scenario.** Stable 0.106.0 wrote every series name
+  as a `<c:strRef>` with no required `<c:f>` (20 schema errors, one per series) and had no
+  legend API at all. Both are fixed in `0.106.1-beta.80`, which is what this repo now pins;
+  on it XLibur produces a schema-clean chart with a legend. Legends are opt-in there — a chart
+  XLibur creates has none until `Legend.Visible` is set.
+
+### Reviewable output
+
+The report benchmarks keep their workbooks. Each run writes `output/stock-report-<library>.xlsx`
+(git-ignored, overwritten on the next run) so the result can be opened and eyeballed:
+
+```pwsh
+# Just write the artifacts — same code path, no measurement (seconds, not minutes).
+dotnet run -c Release --project src/XLBench -- report
+```
+
+Saving happens in `[GlobalCleanup]`, once per library and outside every measured iteration, by
+re-running the build against a `FileStream` — so file I/O never lands in the timings. If a
+workbook is still open in Excel the save is skipped with a warning rather than failing the run.
 
 ### Fairness notes
 
@@ -46,6 +112,15 @@ per scenario.
 - MiniExcel has no formula engine; its write total is a pre-computed value, not a `SUM()`.
 - The shared read file is generated once with ClosedXML purely as a neutral OOXML producer,
   outside any measured region.
+- The report scenario's JSON is parsed once into a shared week × symbol matrix, also outside
+  any measured region — the deserialization is identical for every library and would only add
+  the same constant to each result.
+- Report timings are only comparable within the capability matrix above. ClosedXML emits no
+  chart and NPOI no chart title, so both do less work than the rest.
+- XLibur is pinned to a prerelease (`0.106.1-beta.80`) rather than stable `0.106.0`, because the
+  stable build cannot produce a valid chart for this scenario. That pin applies to the whole
+  package, so every XLibur number — read and write included — comes from the prerelease, not
+  from the latest stable release the other libraries are on.
 
 ## Prerequisites
 
@@ -84,10 +159,13 @@ full run lives in `.github/workflows/benchmark.yml`.
 ## Adding a library
 
 1. Add the NuGet `PackageReference` to `src/XLBench/XLBench.csproj`.
-2. Add `Read/<Name>ReadBenchmarks.cs` and `Write/<Name>WriteBenchmarks.cs` mirroring an
-   existing pair (method names must match — `OpenWorkbook` / `OpenAndReadAll` / `CreateAndSave`
-   — so the joined summary aligns).
+2. Add `Read/<Name>ReadBenchmarks.cs`, `Write/<Name>WriteBenchmarks.cs` and (where the library
+   can express it) `Report/<Name>ReportBenchmarks.cs`, mirroring an existing set. Method names
+   must match — `OpenWorkbook` / `OpenAndReadAll` / `CreateAndSave` / `CreateStockReport` — so
+   the joined summary aligns.
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
+4. For a report benchmark, register it in `Data/ReportArtifacts.cs` so `dotnet run -- report`
+   writes its workbook, and add a row to the capability matrix above.
 
 ## Dependency updates
 
