@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -32,6 +33,23 @@ public static class StockData
 
     public static int WeekCount => WeekEndings.Length;
     public static int SymbolCount => Symbols.Length;
+
+    /// <summary>
+    /// Forces the static constructor — the JSON parse and pivot — to run now.
+    /// </summary>
+    /// <remarks>
+    /// Class initialization is lazy, so without this the load would happen on whichever access
+    /// comes first. Under the default job that lands in the pilot or warmup and never reaches the
+    /// reported mean, but that is a property of the job rather than of the benchmark: a cold-start
+    /// job (<c>--job dry</c>) has no warmup to absorb it, and the cost would be attributed to
+    /// whichever library happened to run first. Every report benchmark calls this from
+    /// <c>[GlobalSetup]</c> so the dataset is loaded before any measurement, under every job.
+    ///
+    /// <see cref="RuntimeHelpers.RunClassConstructor"/> rather than touching a member: it states
+    /// the intent exactly and cannot be optimized away the way a discarded field read might be.
+    /// </remarks>
+    public static void EnsureLoaded() =>
+        RuntimeHelpers.RunClassConstructor(typeof(StockData).TypeHandle);
 
     static StockData()
     {

@@ -23,6 +23,9 @@ namespace XLBench.Benchmarks.Report;
 /// </summary>
 public class NpoiReportBenchmarks
 {
+    [GlobalSetup]
+    public void Setup() => StockData.EnsureLoaded();
+
     [Benchmark]
     public void CreateStockReport()
     {

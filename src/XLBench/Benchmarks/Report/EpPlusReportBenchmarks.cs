@@ -18,7 +18,11 @@ namespace XLBench.Benchmarks.Report;
 public class EpPlusReportBenchmarks
 {
     [GlobalSetup]
-    public void Setup() => EpPlusLicense.Ensure();
+    public void Setup()
+    {
+        EpPlusLicense.Ensure();
+        StockData.EnsureLoaded();
+    }
 
     [Benchmark]
     public void CreateStockReport()

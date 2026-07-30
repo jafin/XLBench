@@ -15,6 +15,9 @@ namespace XLBench.Benchmarks.Report;
 /// </summary>
 public class ClosedXmlReportBenchmarks
 {
+    [GlobalSetup]
+    public void Setup() => StockData.EnsureLoaded();
+
     [Benchmark]
     public void CreateStockReport()
     {

@@ -38,10 +38,12 @@ generated `docs/results.md` reports the exact resolved versions from each run vi
 **Report** (`CreateStockReport` — a small sheet exercising *features* rather than volume):
 
 - Imports `src/XLBench/Data/stock_data.json` (20 tickers × 52 weekly closes) and pivots it
-  into a 52-row × 20-column grid: `Week`, `Week Ending`, then one price column per symbol.
-- Adds **conditional formatting** across the whole price block (`C3:V53`) as one pair of
-  relative-reference expression rules — green when a week closes above the prior week, red
-  when below. Week 1 is excluded; it has no prior week to compare against.
+  into a 53-row × 22-column sheet: a header row plus 52 week rows, and two label columns
+  (`Week`, `Week Ending`) followed by one price column per symbol — a 52 × 20 price block
+  in `C2:V53`.
+- Adds **conditional formatting** over that price block as one pair of relative-reference
+  expression rules — green when a week closes above the prior week, red when below. The
+  applied range is `C3:V53`: week 1 is excluded, having no prior week to compare against.
 - Adds a **line chart** plotting all 20 symbols against the week-ending dates.
 
 Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 1,166 cells the

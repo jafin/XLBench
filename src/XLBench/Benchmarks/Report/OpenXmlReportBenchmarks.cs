@@ -41,6 +41,9 @@ public class OpenXmlReportBenchmarks
     private const uint CategoryAxisId = 111111111U;
     private const uint ValueAxisId = 222222222U;
 
+    [GlobalSetup]
+    public void Setup() => StockData.EnsureLoaded();
+
     [Benchmark]
     public void CreateStockReport()
     {
@@ -128,10 +131,24 @@ public class OpenXmlReportBenchmarks
                 Count = 2,
             });
 
+    /// <summary>
+    /// Builds a differential format for a conditional-format rule.
+    /// </summary>
+    /// <remarks>
+    /// The fill colour goes in <c>bgColor</c>, not <c>fgColor</c>: a dxf inverts the usual
+    /// pattern-fill roles, so for a solid conditional-format fill it is the background colour
+    /// Excel paints. Every other library in this suite agrees — EPPlus and NPOI emit
+    /// <c>patternType="solid"</c> with only a <c>bgColor</c>, and ClosedXML and XLibur emit the
+    /// same plus an explicit <c>&lt;fgColor auto="1"/&gt;</c>.
+    /// </remarks>
     private static DifferentialFormat Dxf((byte R, byte G, byte B) fill, (byte R, byte G, byte B) font) =>
         new(
             new Font(new Color { Rgb = Argb(font) }),
-            new Fill(new PatternFill { BackgroundColor = new BackgroundColor { Rgb = Argb(fill) } }));
+            new Fill(new PatternFill
+            {
+                PatternType = PatternValues.Solid,
+                BackgroundColor = new BackgroundColor { Rgb = Argb(fill) },
+            }));
 
     private static string Argb((byte R, byte G, byte B) c) => $"FF{ReportLayout.Hex(c)}";
 

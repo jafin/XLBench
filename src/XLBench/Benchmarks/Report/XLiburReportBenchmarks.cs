@@ -17,6 +17,9 @@ namespace XLBench.Benchmarks.Report;
 /// </summary>
 public class XLiburReportBenchmarks
 {
+    [GlobalSetup]
+    public void Setup() => StockData.EnsureLoaded();
+
     [Benchmark]
     public void CreateStockReport()
     {
