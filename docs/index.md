@@ -16,13 +16,16 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 
 | Library | Package | Version |
 | --- | --- | --- |
-| ClosedXML | `ClosedXML` | 0.105.1 |
-| EPPlus | `EPPlus` | 8.6.3 |
-| OpenXML SDK | `DocumentFormat.OpenXml` | 3.5.1 |
-| NPOI | `NPOI` | 2.8.0 |
-| MiniExcel | `MiniExcel` | 1.45.0 |
-| XLibur | `XLibur.Bundle` | 0.106.1-beta.80 |
-| IronXL ⧗ | `IronXL.Excel` | 2026.7.2 |
+| [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 |
+| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.6.3 |
+| [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 |
+| [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 |
+| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.106.1-beta.80 |
+| [IronXL](https://ironsoftware.com/csharp/excel/) ⧗ | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.7.2 |
+
+Library links point at each project's source repository, except IronXL, which is closed source —
+that one goes to the product page.
 
 ## Scenarios
 
