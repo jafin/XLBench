@@ -113,31 +113,6 @@ a valid licence key. Runs without one replay the committed `snapshots/ironxl.jso
 IronXL stays in the comparison without every contributor needing a key. The findings below were
 produced under a time-limited trial key and are reproducible with any valid key.
 
-#### It throws rather than watermarking
-
-IronXL is often described as degrading to watermarked output when unlicensed. That is not what
-2026.7.2 does — it throws from `WorkBook.Create`/`WorkBook.Load` before writing anything:
-
-```
-IronSoftware.Exceptions.LicensingException: Production License Required
-IronXL is running in production without a license.
-  * Development use: Free for 7 days
-  * Production use: Requires a license
-```
-
-The advertised 7-day development grace never applies on .NET 10. It is gated on an internal
-`DevelopmentEnvironmentDetected` check which, decompiled, reduces to:
-
-```csharp
-Debugger.IsAttached || AppDomain.CurrentDomain.FriendlyName.EndsWith("vshost.exe", ...)
-```
-
-`vshost.exe` is the .NET **Framework** Visual Studio hosting process; it does not exist on .NET
-Core or later, so on .NET 10 an attached debugger is the only qualifying signal. BenchmarkDotNet
-measures in isolated child processes that have no debugger attached, so a benchmark run is
-always classified as production — the grace period is structurally unreachable for this
-workload, regardless of build configuration (`-c Debug` fails identically).
-
 #### Snapshots — how IronXL still appears in the results
 
 Requiring a key for every run would drop IronXL out of the comparison entirely, so its results
