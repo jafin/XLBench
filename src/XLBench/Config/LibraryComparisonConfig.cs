@@ -2,8 +2,10 @@ using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
+using BenchmarkDotNet.Filters;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using XLBench.Libraries;
 
 namespace XLBench.Config;
 
@@ -27,6 +29,18 @@ public static class BenchmarkConfig
         // The Namespace column is always "XLBench.Benchmarks.Read/Write" — redundant, and it
         // widens the results table. Hide it (the Library + Type + Method columns identify each row).
         config.HideColumns("Namespace");
+
+        // IronXL is the one commercial library here, and unlicensed it throws rather than
+        // degrading — see IronXlLicense. Without a key its benchmarks can only fail, so drop
+        // them from the run instead of polluting the summary with errors.
+        if (!IronXlLicense.KeyAvailable)
+        {
+            Console.WriteLine(
+                "[XLBench] XLBENCH_IRONXL_KEY not set — excluding IronXL benchmarks (see README).");
+            config.AddFilter(new SimpleFilter(c =>
+                !c.Descriptor.Type.Name.StartsWith("IronXl", StringComparison.Ordinal)));
+        }
+
         return config;
     }
 }
@@ -42,6 +56,7 @@ public static class LibraryNames
         var n when n.StartsWith("Npoi") => "NPOI",
         var n when n.StartsWith("MiniExcel") => "MiniExcel",
         var n when n.StartsWith("XLibur") => "XLibur",
+        var n when n.StartsWith("IronXl") => "IronXL",
         _ => typeName,
     };
 }

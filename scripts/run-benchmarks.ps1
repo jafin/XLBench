@@ -12,6 +12,10 @@
     (git-ignored, overwritten each run). To refresh just those without measuring, run:
         dotnet run -c Release --project src/XLBench -- report
 
+    IronXL is commercial and is skipped unless $env:XLBENCH_IRONXL_KEY holds a licence key.
+    A run that has one refreshes snapshots/ironxl.json; runs without one replay that snapshot
+    into the results, marked with the carried-over symbol. Commit the refreshed snapshot.
+
 .PARAMETER Job
     Optional BenchmarkDotNet job to trade fidelity for speed, e.g. 'short' or 'dry'.
     Omit for the full default job (most trustworthy numbers).
@@ -40,6 +44,9 @@ try {
     Write-Host ''
     Write-Host 'Done. Results written to docs/results.md.' -ForegroundColor Green
     Write-Host 'Commit and push docs/ to update GitHub Pages.' -ForegroundColor Green
+    if ($env:XLBENCH_IRONXL_KEY) {
+        Write-Host 'IronXL ran: commit the refreshed snapshots/ironxl.json too.' -ForegroundColor Green
+    }
 }
 finally {
     Pop-Location

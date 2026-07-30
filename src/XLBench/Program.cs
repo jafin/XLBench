@@ -165,6 +165,7 @@ namespace XLBench
                 writer.WriteLine();
                 writer.WriteLine("Each results table (one per test method) is heat-mapped independently on the Pages site (🟩 best → 🟥 worst).");
                 writer.WriteLine();
+                writer.Write(BuildSnapshotNotice(scenarios, HostOf(summaryList)));
                 writer.Write(BuildVersionsTable());
                 writer.Write(BuildMermaidSection(scenarios));
                 writer.WriteLine("## Detailed results");
@@ -253,7 +254,9 @@ namespace XLBench
 
         // ---- Metric extraction -------------------------------------------------------
 
-        private sealed record Series(string Library, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs);
+        private sealed record Series(
+            string Library, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs,
+            string? SnapshotOf = null);
 
         /// <summary>Maps NaN/Infinity (which are not valid JSON) to null; passes finite values through.</summary>
         private static double? Finite(double? v) => v is { } d && double.IsFinite(d) ? d : null;
@@ -269,10 +272,18 @@ namespace XLBench
             ("CreateStockReport", "Report · data + conditional formatting + chart"),
         ];
 
+        /// <summary>
+        /// Libraries that cannot run without external credentials, so their results are carried
+        /// between runs in <c>snapshots/</c>. See <see cref="LibrarySnapshot"/>.
+        /// </summary>
+        private static readonly string[] SnapshotLibraries = ["IronXL"];
+
         private static List<Scenario> ExtractScenarios(IEnumerable<Summary> summaries)
         {
+            SnapshotRows.Clear();
+
             // Flatten every report into (library, method, time, allocated).
-            var rows = new List<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs)>();
+            var rows = new List<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs, string? SnapshotOf)>();
             foreach (var summary in summaries)
             foreach (var report in summary.Reports)
             {
@@ -292,7 +303,17 @@ namespace XLBench
                     .FirstOrDefault(m => m.Descriptor.Id.Contains("Allocated", StringComparison.OrdinalIgnoreCase));
                 double? allocMb = Finite(allocMetric is not null ? allocMetric.Value / (1024.0 * 1024.0) : null);
 
-                rows.Add((lib, method, timeMs, allocMb, errorMs, stdDevMs));
+                rows.Add((lib, method, timeMs, allocMb, errorMs, stdDevMs, null));
+            }
+
+            // A library that ran this time replaces its snapshot; one that did not is restored
+            // from it, so the comparison stays complete across runs that lack a licence key.
+            foreach (var library in SnapshotLibraries)
+            {
+                if (rows.Any(r => r.Library == library))
+                    SaveSnapshot(library, summaries, rows.Where(r => r.Library == library));
+                else
+                    rows.AddRange(RestoreSnapshot(library));
             }
 
             var scenarios = new List<Scenario>();
@@ -301,12 +322,118 @@ namespace XLBench
                 var byLibrary = rows
                     .Where(r => r.Method == key && r.TimeMs.HasValue)
                     .OrderBy(r => r.TimeMs)
-                    .Select(r => new Series(r.Library, r.TimeMs, r.AllocMb, r.ErrorMs, r.StdDevMs))
+                    .Select(r => new Series(r.Library, r.TimeMs, r.AllocMb, r.ErrorMs, r.StdDevMs, r.SnapshotOf))
                     .ToList();
                 if (byLibrary.Count > 0)
                     scenarios.Add(new Scenario(key, label, byLibrary));
             }
             return scenarios;
+        }
+
+        // ---- Snapshots for licence-gated libraries -----------------------------------
+
+        /// <summary>Rows replayed from a snapshot, keyed for merging back into the live set.</summary>
+        private static IEnumerable<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs, string? SnapshotOf)>
+            RestoreSnapshot(string library)
+        {
+            var snapshot = LibrarySnapshot.Load(library);
+            if (snapshot is null) yield break;
+
+            Console.WriteLine(
+                $"[XLBench] {library} did not run; replaying {snapshot.Methods.Count} snapshotted result(s) " +
+                $"from {LibrarySnapshot.PathFor(library)}.");
+
+            foreach (var (method, entry) in snapshot.Methods)
+            {
+                SnapshotRows[(library, method)] = entry;
+                yield return (library, method, entry.TimeMs, entry.AllocMb, entry.ErrorMs,
+                    entry.StdDevMs, LibrarySnapshot.Describe(entry));
+            }
+        }
+
+        /// <summary>Snapshot entries in play for this publish, so the tables can replay their rows.</summary>
+        private static readonly Dictionary<(string Library, string Method), LibrarySnapshot.SnapshotEntry> SnapshotRows = [];
+
+        private static void SaveSnapshot(
+            string library,
+            IEnumerable<Summary> summaries,
+            IEnumerable<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs, string? SnapshotOf)> measured)
+        {
+            var summaryList = summaries.ToList();
+            var host = HostOf(summaryList);
+            var job = summaryList
+                .SelectMany(s => s.BenchmarksCases)
+                .Select(c => c.Job.ResolvedId)
+                .FirstOrDefault() ?? string.Empty;
+            var version = LibraryVersions.For(library);
+            var capturedUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+
+            // Pair each measured method with the markdown row BenchmarkDotNet rendered for it,
+            // so a later keyless run can reproduce the same table cells rather than inventing them.
+            var (header, rowsByMethod) = ExtractMarkdownRows(summaryList, library);
+
+            var entries = new Dictionary<string, LibrarySnapshot.SnapshotEntry>();
+            foreach (var r in measured)
+            {
+                entries[r.Method] = new LibrarySnapshot.SnapshotEntry
+                {
+                    Version = version,
+                    CapturedUtc = capturedUtc,
+                    Host = host,
+                    Job = job,
+                    TimeMs = r.TimeMs,
+                    AllocMb = r.AllocMb,
+                    ErrorMs = r.ErrorMs,
+                    StdDevMs = r.StdDevMs,
+                    TableHeader = header,
+                    TableRow = rowsByMethod.GetValueOrDefault(r.Method),
+                };
+            }
+
+            LibrarySnapshot.Merge(library, entries);
+        }
+
+        /// <summary>
+        /// Pulls a library's rendered markdown rows out of the generated GitHub reports, keyed by
+        /// method, along with the header they belong to.
+        /// </summary>
+        private static (string? Header, Dictionary<string, string> RowsByMethod) ExtractMarkdownRows(
+            IEnumerable<Summary> summaries, string library)
+        {
+            var rowsByMethod = new Dictionary<string, string>();
+            string? header = null;
+
+            var resultsDir = summaries.Select(s => s.ResultsDirectoryPath).FirstOrDefault(Directory.Exists);
+            if (resultsDir is null) return (null, rowsByMethod);
+
+            foreach (var file in Directory.GetFiles(resultsDir, "*-report-github.md").OrderBy(f => f))
+            {
+                var lines = File.ReadAllText(file).Replace("\r\n", "\n").Split('\n');
+                var headerIdx = Array.FindIndex(lines, l =>
+                {
+                    var t = l.TrimStart();
+                    return t.StartsWith('|') && l.Contains("Method") && l.Contains("Mean");
+                });
+                if (headerIdx < 0) continue;
+
+                var headers = SplitRow(lines[headerIdx]);
+                var libraryCol = Array.FindIndex(headers, c => c.Equals("Library", StringComparison.OrdinalIgnoreCase));
+                var methodCol = Array.FindIndex(headers, c => c.Equals("Method", StringComparison.OrdinalIgnoreCase));
+                if (libraryCol < 0 || methodCol < 0) continue;
+
+                header ??= lines[headerIdx];
+                for (var i = headerIdx + 2; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
+                {
+                    var cells = SplitRow(lines[i]);
+                    if (cells.ElementAtOrDefault(libraryCol) == library &&
+                        cells.ElementAtOrDefault(methodCol) is { Length: > 0 } method)
+                    {
+                        rowsByMethod[method] = lines[i];
+                    }
+                }
+            }
+
+            return (header, rowsByMethod);
         }
 
         // ---- Library versions --------------------------------------------------------
@@ -315,13 +442,79 @@ namespace XLBench
         {
             var sb = new StringBuilder();
             sb.AppendLine("## Libraries under test").AppendLine();
-            sb.AppendLine("| Library | Version |");
-            sb.AppendLine("| --- | --- |");
+            sb.AppendLine("| Library | Version | Source |");
+            sb.AppendLine("| --- | --- | --- |");
             foreach (var (lib, ver) in LibraryVersions.All)
-                sb.AppendLine($"| {lib} | {ver} |");
+                sb.AppendLine($"| {lib} | {ver} | this run |");
+
+            // Snapshotted libraries did not run, so report the version their numbers came from
+            // rather than the version currently referenced.
+            foreach (var library in SnapshotLibraries)
+            {
+                var entry = SnapshotRows
+                    .Where(kv => kv.Key.Library == library)
+                    .Select(kv => kv.Value)
+                    .FirstOrDefault();
+                if (entry is not null)
+                    sb.AppendLine($"| {library} {SnapshotMarker} | {entry.Version} | snapshot ({LibrarySnapshot.Describe(entry)}) |");
+            }
+
             sb.AppendLine();
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Explains the <c>⧗</c> marker whenever any published number was replayed from
+        /// <c>snapshots/</c> instead of measured in this run.
+        /// </summary>
+        private static string HostOf(IEnumerable<Summary> summaries) =>
+            summaries
+                .Select(s => $"{s.HostEnvironmentInfo.Os.Value}, {s.HostEnvironmentInfo.Cpu.Value?.ProcessorName}")
+                .FirstOrDefault() ?? string.Empty;
+
+        private static string BuildSnapshotNotice(IReadOnlyList<Scenario> scenarios, string currentHost)
+        {
+            var libraries = scenarios
+                .SelectMany(s => s.ByLibrary)
+                .Where(b => b.SnapshotOf is not null)
+                .Select(b => b.Library)
+                .Distinct()
+                .ToList();
+
+            if (libraries.Count == 0) return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine(
+                $"> {SnapshotMarker} **Carried over from an earlier run.** The rows and chart points below " +
+                "marked with this symbol were not measured here — the library is commercial and needs a " +
+                "licence key this run did not have — so they are replayed from `snapshots/`. Compare them " +
+                "as indicative rather than like-for-like, and see the repository README for how to refresh " +
+                "a snapshot.");
+            sb.AppendLine(">");
+
+            foreach (var library in libraries)
+            {
+                var entry = SnapshotRows.First(kv => kv.Key.Library == library).Value;
+
+                // State the hardware rather than assume it differs — a snapshot refreshed on this
+                // same machine is directly comparable, and saying otherwise would undersell it.
+                var hardware = string.Equals(entry.Host, currentHost, StringComparison.Ordinal)
+                    ? "same hardware as this run"
+                    : $"different hardware — {entry.Host}";
+
+                sb.AppendLine($"> - **{library}** {entry.Version}, {entry.Job} job, "
+                              + $"captured {Captured(entry)} on {hardware}.");
+            }
+
+            sb.AppendLine();
+            return sb.ToString();
+        }
+
+        private static string Captured(LibrarySnapshot.SnapshotEntry entry) =>
+            DateTime.TryParse(entry.CapturedUtc, CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind, out var d)
+                ? d.ToUniversalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                : "an unknown date";
 
         // ---- Split the joined table into one table per test method -------------------
 
@@ -341,6 +534,7 @@ namespace XLBench
             var headers = SplitRow(headerLine);
             var methodCol = Array.FindIndex(headers, c => c.Equals("Method", StringComparison.OrdinalIgnoreCase));
             var meanCol = Array.FindIndex(headers, c => c.Equals("Mean", StringComparison.OrdinalIgnoreCase));
+            var libraryCol = Array.FindIndex(headers, c => c.Equals("Library", StringComparison.OrdinalIgnoreCase));
             if (methodCol < 0) return report;
 
             var dataRows = new List<string>();
@@ -353,6 +547,39 @@ namespace XLBench
             var byMethod = dataRows
                 .GroupBy(r => SplitRow(r).ElementAtOrDefault(methodCol) ?? string.Empty)
                 .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Replay any snapshotted rows for libraries that could not run (see LibrarySnapshot).
+            // Two guards, because a snapshot is by definition a row from a different run:
+            // the column *set* must match (compared by name — BenchmarkDotNet re-pads cell widths
+            // every run, so the raw header strings rarely match), and the Mean column must be in
+            // the same unit, since BenchmarkDotNet picks units per table. Either mismatch would
+            // put wrong numbers under right-looking headings, so the row is dropped instead.
+            foreach (var ((library, method), entry) in SnapshotRows)
+            {
+                if (entry.TableRow is not { Length: > 0 } row) continue;
+                if (entry.TableHeader is not { } storedHeader) continue;
+                if (!byMethod.TryGetValue(method, out var list)) continue;
+
+                if (!SplitRow(storedHeader).SequenceEqual(headers, StringComparer.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine(
+                        $"[XLBench] Omitting snapshotted {library}.{method} row from the table: it was " +
+                        "captured under a different column set (usually a different --job). The chart data still uses it.");
+                    continue;
+                }
+
+                var liveUnit = UnitOf(SplitRow(list[0]).ElementAtOrDefault(meanCol));
+                var snapshotUnit = UnitOf(SplitRow(row).ElementAtOrDefault(meanCol));
+                if (meanCol >= 0 && liveUnit is not null && snapshotUnit is not null && liveUnit != snapshotUnit)
+                {
+                    Console.WriteLine(
+                        $"[XLBench] Omitting snapshotted {library}.{method} row from the table: " +
+                        $"recorded in {snapshotUnit}, this run reports {liveUnit}. The chart data still uses it.");
+                    continue;
+                }
+
+                list.Add(MarkSnapshotRow(row, libraryCol));
+            }
 
             // Known methods first (in MethodLabels order), then any others.
             var orderedKeys = MethodLabels.Select(m => m.Key).Where(byMethod.ContainsKey)
@@ -380,6 +607,30 @@ namespace XLBench
         private static string[] SplitRow(string line) =>
             line.Trim().Trim('|').Split('|').Select(c => c.Trim()).ToArray();
 
+        /// <summary>
+        /// Tags a replayed row's Library cell so a snapshot is never mistaken for a live
+        /// measurement. Falls back to a leading marker if the Library column is absent.
+        /// </summary>
+        private static string MarkSnapshotRow(string row, int libraryCol)
+        {
+            var cells = SplitRow(row);
+            if (libraryCol < 0 || libraryCol >= cells.Length)
+                return row;
+
+            cells[libraryCol] = $"{cells[libraryCol]} {SnapshotMarker}";
+            return $"| {string.Join(" | ", cells)} |";
+        }
+
+        private const string SnapshotMarker = "⧗";
+
+        /// <summary>Trailing unit of a BenchmarkDotNet numeric cell, e.g. "ms" from "1,662.9 ms".</summary>
+        private static string? UnitOf(string? cell)
+        {
+            if (string.IsNullOrWhiteSpace(cell)) return null;
+            var m = Regex.Match(cell.Trim(), @"[\d.,]+\s*([^\s\d.,]+)$");
+            return m.Success ? m.Groups[1].Value : null;
+        }
+
         private static double ParseLeadingNumber(string? cell)
         {
             if (cell is null) return double.MaxValue;
@@ -401,15 +652,19 @@ namespace XLBench
             foreach (var s in scenarios)
             {
                 AppendMermaidBar(sb, $"{s.Label} — time (ms)", "Time (ms)",
-                    s.ByLibrary.Select(b => (b.Library, b.TimeMs)));
+                    s.ByLibrary.Select(b => (ChartLabel(b), b.TimeMs)));
 
                 var withAlloc = s.ByLibrary.Where(b => b.AllocMb.HasValue)
-                    .OrderBy(b => b.AllocMb).Select(b => (b.Library, b.AllocMb)).ToList();
+                    .OrderBy(b => b.AllocMb).Select(b => (ChartLabel(b), b.AllocMb)).ToList();
                 if (withAlloc.Count > 0)
                     AppendMermaidBar(sb, $"{s.Label} — allocated (MB)", "Allocated (MB)", withAlloc);
             }
             return sb.ToString();
         }
+
+        /// <summary>Chart axis label, marked when the value came from a snapshot rather than this run.</summary>
+        private static string ChartLabel(Series s) =>
+            s.SnapshotOf is null ? s.Library : $"{s.Library} {SnapshotMarker}";
 
         private static void AppendMermaidBar(StringBuilder sb, string title, string yAxis,
             IEnumerable<(string Library, double? Value)> data)
@@ -439,15 +694,32 @@ namespace XLBench
 
         private static void WriteChartData(string docsDir, IReadOnlyList<Scenario> scenarios)
         {
+            // Snapshotted libraries are absent from LibraryVersions (they did not run), but the
+            // chart page derives its canonical library order — and therefore its colour
+            // assignment and legend — from this dictionary, so they have to appear here too.
+            var versions = LibraryVersions.All.ToDictionary(x => x.Library, x => x.Version);
+            var snapshots = new Dictionary<string, string>();
+            foreach (var (key, entry) in SnapshotRows)
+            {
+                versions[key.Library] = entry.Version;
+                snapshots[key.Library] = LibrarySnapshot.Describe(entry);
+            }
+
             var payload = new
             {
                 updated = DateTime.Now.ToString("u", CultureInfo.InvariantCulture),
-                versions = LibraryVersions.All.ToDictionary(x => x.Library, x => x.Version),
+                versions,
+                // Library -> provenance, for the libraries whose points were carried over from a
+                // previous run rather than measured in this one.
+                snapshots,
                 scenarios = scenarios.Select(s => new
                 {
                     key = s.Key,
                     label = s.Label,
                     libraries = s.ByLibrary.Select(b => b.Library).ToArray(),
+                    // Non-null when the point was replayed from snapshots/ rather than measured
+                    // in this run; the value describes the version/job/date it came from.
+                    snapshotOf = s.ByLibrary.Select(b => b.SnapshotOf).ToArray(),
                     timeMs = s.ByLibrary.Select(b => b.TimeMs.HasValue ? Math.Round(b.TimeMs.Value, 2) : (double?)null).ToArray(),
                     allocMb = s.ByLibrary.Select(b => b.AllocMb.HasValue ? Math.Round(b.AllocMb.Value, 2) : (double?)null).ToArray(),
                     // Consumed by charts.html for the error whiskers and the tooltip's std-dev line.
