@@ -5,7 +5,12 @@
 
 .PARAMETER Filter
     BenchmarkDotNet glob(s) selecting which benchmarks to run. Default: everything.
-    Examples: '*Read*', '*Write*', '*ClosedXml*'.
+    Examples: '*Read*', '*Write*', '*Report*', '*ClosedXml*'.
+
+.NOTES
+    The report benchmarks also write output/stock-report-<library>.xlsx for manual review
+    (git-ignored, overwritten each run). To refresh just those without measuring, run:
+        dotnet run -c Release --project src/XLBench -- report
 
 .PARAMETER Job
     Optional BenchmarkDotNet job to trade fidelity for speed, e.g. 'short' or 'dry'.

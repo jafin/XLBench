@@ -9,6 +9,12 @@
     <AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>
   </PropertyGroup>
 
+  <!-- Source dataset for the report scenario. Embedded (not copied) so it resolves regardless
+       of the working directory BenchmarkDotNet gives its generated child processes. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Data\stock_data.json" LogicalName="XLBench.Data.stock_data.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- Transitive pin: overrides a vulnerable 10.0.7 pulled in by the Excel libraries. -->
@@ -24,7 +30,7 @@
     <PackageReference Include="MiniExcel" Version="1.45.0" />
     <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
-    <PackageReference Include="XLibur.Bundle" Version="0.106.0" />
+    <PackageReference Include="XLibur.Bundle" Version="0.106.1-beta.80" />
   </ItemGroup>
 
 </Project>

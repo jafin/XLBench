@@ -6,6 +6,7 @@ using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using XLBench;
 using XLBench.Config;
+using XLBench.Data;
 
 // Run all (or CLI-filtered) benchmarks with the shared comparison config, then publish
 // the generated GitHub-flavored markdown into ./docs for GitHub Pages.
@@ -22,7 +23,22 @@ if (args is [{ } first, ..] && first.Equals("versions", StringComparison.Ordinal
     return;
 }
 
+// `dotnet run -- report` writes just the report-scenario .xlsx artifacts to output/ and exits.
+// Same code path the benchmarks measure, without the (slow) measurement — handy for
+// regenerating the reviewable workbooks after a change.
+if (args is [{ } cmd, ..] && cmd.Equals("report", StringComparison.OrdinalIgnoreCase))
+{
+    ReportArtifacts.WriteAll();
+    return;
+}
+
 var config = BenchmarkConfig.Create();
+
+// The report benchmarks save their workbook for manual review from [GlobalCleanup], which runs
+// inside BenchmarkDotNet's generated child process — where the working directory is the build
+// folder, not the repo root. Pin the destination here (child processes inherit the environment)
+// so artifacts always land in one predictable place.
+Environment.SetEnvironmentVariable("XLBENCH_OUTPUT", XLBench.Data.ReportOutput.Directory);
 
 // BenchmarkDotNet accumulates report files across runs; clear the previous run's results
 // so the published docs/results.md reflects only the current run.
@@ -250,6 +266,7 @@ namespace XLBench
             ("OpenWorkbook", "Read · open workbook"),
             ("OpenAndReadAll", "Read · open + read all cells"),
             ("CreateAndSave", "Write · create + save"),
+            ("CreateStockReport", "Report · data + conditional formatting + chart"),
         ];
 
         private static List<Scenario> ExtractScenarios(IEnumerable<Summary> summaries)
