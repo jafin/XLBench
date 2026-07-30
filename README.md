@@ -16,6 +16,7 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | NPOI | `NPOI` | 2.8.0 | Java POI port |
 | MiniExcel | `MiniExcel` | 1.45.0 | Streaming, POCO/dynamic oriented |
 | XLibur | `XLibur.Bundle` | 0.106.1-beta.80 | Prerelease; bundles the SkiaSharp font engine (auto-registers). Ahead of stable 0.106.0 for the chart fixes the report scenario needs |
+| IronXL | `IronXL.Excel` | 2026.7.2 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
 
 Versions are the pinned NuGet package versions (see `src/XLBench/XLBench.csproj`); the
 generated `docs/results.md` reports the exact resolved versions from each run via reflection.
@@ -70,9 +71,10 @@ that skips a feature is doing strictly less work.
 | NPOI | ✅ | ✅ | ✅ | ✅ | ⚠️ 1 schema error |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ | — not benchmarked |
 | XLibur | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
+| IronXL | ✅ | ⚠️ font only | ✅ | ✅ | ⚠️ 1 schema error |
 
-All four charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK
-and XLibur are each asked for one explicitly.
+All five charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK,
+XLibur and IronXL are each asked for one explicitly.
 
 - **ClosedXML — no charts.** 0.105.0 ships internal `XLChart`/`XLCharts` types, but nothing
   exposes them: `IXLWorksheet` has no `Charts` member, so there is no public API to add one.
@@ -104,6 +106,113 @@ and XLibur are each asked for one explicitly.
   on it XLibur produces a schema-clean chart with a legend. Legends are opt-in there — a chart
   XLibur creates has none until `Legend.Visible` is set.
 
+### IronXL — licence-gated and snapshotted
+
+IronXL is implemented for all three scenarios, but only measures when `XLBENCH_IRONXL_KEY` holds
+a valid licence key. Runs without one replay the committed `snapshots/ironxl.json` instead, so
+IronXL stays in the comparison without every contributor needing a key. The findings below were
+produced under a time-limited trial key and are reproducible with any valid key.
+
+#### It throws rather than watermarking
+
+IronXL is often described as degrading to watermarked output when unlicensed. That is not what
+2026.7.2 does — it throws from `WorkBook.Create`/`WorkBook.Load` before writing anything:
+
+```
+IronSoftware.Exceptions.LicensingException: Production License Required
+IronXL is running in production without a license.
+  * Development use: Free for 7 days
+  * Production use: Requires a license
+```
+
+The advertised 7-day development grace never applies on .NET 10. It is gated on an internal
+`DevelopmentEnvironmentDetected` check which, decompiled, reduces to:
+
+```csharp
+Debugger.IsAttached || AppDomain.CurrentDomain.FriendlyName.EndsWith("vshost.exe", ...)
+```
+
+`vshost.exe` is the .NET **Framework** Visual Studio hosting process; it does not exist on .NET
+Core or later, so on .NET 10 an attached debugger is the only qualifying signal. BenchmarkDotNet
+measures in isolated child processes that have no debugger attached, so a benchmark run is
+always classified as production — the grace period is structurally unreachable for this
+workload, regardless of build configuration (`-c Debug` fails identically).
+
+#### Snapshots — how IronXL still appears in the results
+
+Requiring a key for every run would drop IronXL out of the comparison entirely, so its results
+are **carried between runs**:
+
+- A run **with** `XLBENCH_IRONXL_KEY` measures IronXL normally and writes what it measured to
+  `snapshots/ironxl.json` — timings, allocations, and the markdown row BenchmarkDotNet rendered,
+  each stamped with the IronXL version, host, job and capture time.
+- A run **without** the key skips IronXL and replays that snapshot into the results tables, the
+  static charts, the interactive page and the versions table, every occurrence marked **⧗** with
+  a banner naming the version and date the numbers came from.
+
+Entries are merged per method, so `--filter '*Read*'` with a key refreshes only the read methods
+and leaves the rest of the snapshot intact. Two guards stop a stale snapshot producing a wrong
+table row: the column set must still match, and the `Mean` column must be in the same unit
+(BenchmarkDotNet picks units per table). If either differs the row is dropped with a warning,
+though the chart data — which is stored numerically in ms — is still used.
+
+```pwsh
+# Refresh the snapshot after an IronXL version bump.
+$env:XLBENCH_IRONXL_KEY = 'IRONXL.YOURCOMPANY.IRO######.####'
+./scripts/run-benchmarks.ps1
+# then commit both docs/ and snapshots/ironxl.json
+```
+
+`snapshots/ironxl.json` is committed, so a clone with no key still publishes a complete
+comparison. The trade-off is explicit rather than hidden: those numbers came from different
+hardware at a different time, the page says so, and the snapshot goes stale until someone with
+a key re-runs it. Dependabot bumping `IronXL.Excel` will not refresh it — that needs a keyed run.
+
+#### What the report scenario found
+
+With a key, IronXL runs the whole scenario end to end and produces a complete workbook. Three
+defects came out of validating the result and diffing its XML against the other five (the
+artifact was not opened in Excel, so whether Excel offers to repair it is untested):
+
+- **Conditional-format fills are silently discarded.** `PatternFormatting.BackgroundColor` is a
+  hex string that IronXL converts to a `short` legacy-palette index before handing it to the
+  NPOI model underneath. Every colour tried — pastel or primary, `#RRGGBB` or `#AARRGGBB` —
+  emits `<bgColor indexed="0"/>`, i.e. black. The property getter reads the string back out of
+  IronXL's own cache rather than the model, so it round-trips convincingly while the workbook
+  receives none of it. The rule's **font** colour does apply, so the artifact ends up with
+  green/red text on a black fill. There is no other public API for a conditional-format fill.
+- **The two colour properties disagree on format.** `FontFormatting.FontColor` writes the digits
+  through verbatim, so a 6-digit value lands as `rgb="006100"` and fails schema validation
+  (OOXML requires 4-byte ARGB) — the alpha byte is mandatory. `PatternFormatting.BackgroundColor`
+  does the opposite and truncates to 6 digits, reading `#FFFF0000` (opaque red) back as
+  `#ffff00` (yellow).
+- **`Font.Bold = true` alone emits invalid XML.** Setting nothing but bold on the header row
+  produces `<color indexed="8" rgb="000000"/>` — again a 6-digit `rgb` where the schema wants 8.
+  An unstyled workbook is clean, so this is IronXL's own doing and no public API avoids it. It
+  is the single validation error in `output/stock-report-ironxl.xlsx`, and the same class of
+  problem as the NPOI chart-title issue above.
+
+Everything else in the scenario works: 20 chart series with a title and a real legend
+(`SetLegendPosition` is honoured — `Right` emits an empty `<c:legendPos/>` only because "r" is
+the schema default), `AutoSizeColumn` fits the week-ending column to 12.6 with `bestFit="1"`,
+and both `conditionalFormatting` blocks carry the correct `sqref` and relative formulas.
+
+#### API notes
+
+- **It is NPOI underneath.** `IronXL.dll` contains ILMerged `NPOI.XSSF.UserModel` types and its
+  own XML docs cross-reference `NPOI.SS.Formula.Formula`. The artifact is 79 KB against NPOI's
+  79 KB and ClosedXML's 45 KB. Expect NPOI-shaped behaviour and NPOI-shaped output quirks.
+- **`WorkBook` is not `IDisposable`.** The only eager-model library here with no deterministic
+  release of a loaded workbook — relevant at the 100,000 × 15 read size.
+- **No `SaveAs(Stream)`.** `ToStream()` allocates and returns its own `MemoryStream`, so the
+  whole workbook is buffered in memory whatever the real destination is. The write benchmark
+  measures that buffer because there is no way not to.
+- **`AddSeries(values)` throws for line charts** — `"You must choose categories range for Line
+  chart type together with values"`. The two-argument overload is mandatory.
+- **Heavy transitive footprint.** It pulls in `Grpc.Net.Client`, `Google.Protobuf`, `Polly` and
+  `IronSoftware.System.Drawing` for licensing and telemetry. `IronXlLicense.Ensure()` calls
+  `License.DisableAppAnalytics()` so the phone-home cannot fold network latency into timings.
+
 ### Reviewable output
 
 The report benchmarks keep their workbooks. Each run writes `output/stock-report-<library>.xlsx`
@@ -132,9 +241,15 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   chart, and the OpenXML SDK estimates its column width instead of measuring text, so each
   does less work than a full run of the scenario.
 - Auto-fit widths legitimately differ between libraries, because each measures text with its own
-  font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, NPOI 11.16, and the
-  OpenXML SDK's character-count estimate 11.71. A like-for-like width was not forced — the point
-  is what each library does when simply asked to fit the column.
+  font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, NPOI 11.16,
+  IronXL 12.6, and the OpenXML SDK's character-count estimate 11.71. A like-for-like width was
+  not forced — the point is what each library does when simply asked to fit the column.
+- IronXL's numbers are **snapshots**, not fresh measurements, unless the run that produced the
+  page had a licence key. They are marked ⧗ wherever they appear and carry the version and date
+  they were captured; treat them as indicative against the rest of the table.
+- IronXL's report timing covers the full scenario, but its conditional-format fill never reaches
+  the file (see above). It still pays for building the rule, so the timing stays comparable —
+  the artifact is what differs.
 - XLibur is pinned to a prerelease (`0.106.1-beta.80`) rather than stable `0.106.0`, because the
   stable build cannot produce a valid chart for this scenario. That pin applies to the whole
   package, so every XLibur number — read and write included — comes from the prerelease, not
@@ -184,6 +299,9 @@ full run lives in `.github/workflows/benchmark.yml`.
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
 4. For a report benchmark, register it in `Data/ReportArtifacts.cs` so `dotnet run -- report`
    writes its workbook, and add a row to the capability matrix above.
+5. If the library needs credentials to run at all, add it to `SnapshotLibraries` in
+   `Program.cs` and gate it in `BenchmarkConfig` the way IronXL is, so runs without those
+   credentials replay `snapshots/<library>.json` instead of failing.
 
 ## Dependency updates
 
@@ -204,9 +322,12 @@ src/XLBench/
   Program.cs                     # switcher + results publisher (-> docs/)
   Config/LibraryComparisonConfig # joined summary, Library column, memory diagnoser, GH export
   Data/TestData.cs               # shared deterministic dataset (seed 42)
+  Data/LibrarySnapshot.cs        # persisted results for licence-gated libraries
   Libraries/EpPlusLicense.cs     # EPPlus non-commercial license declaration
+  Libraries/IronXlLicense.cs     # IronXL commercial key (opt-in via XLBENCH_IRONXL_KEY)
   Benchmarks/Read/*              # one class per library
   Benchmarks/Write/*             # one class per library
 docs/                            # GitHub Pages content (index.md + generated results.md)
+snapshots/                       # committed results for libraries that need a licence key
 scripts/run-benchmarks.ps1
 ```

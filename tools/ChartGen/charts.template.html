@@ -148,6 +148,7 @@
       <p class="sub">Read/write performance and memory across .NET Excel libraries. Lower is better on both measures — shorter bars are faster / leaner. See the <a href="results.html">full result tables</a> and the <a href="./">project overview</a>.</p>
       <p class="meta" id="updated"></p>
       <p class="meta" id="versions"></p>
+      <p class="meta" id="snapshotNote" style="display:none"></p>
     </div>
     <div class="controls" id="controls" style="display:none">
       <div class="seg" role="group" aria-label="Measure">
@@ -194,6 +195,19 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   if(PAYLOAD.versions) document.getElementById('versions').textContent =
       'Versions: ' + Object.entries(PAYLOAD.versions).map(([k,v])=>`${k} ${v}`).join('  ·  ');
 
+  // Libraries that could not run here (commercial, licence-gated) have their points replayed
+  // from snapshots/. Mark them everywhere they appear so they read as carried-over, not measured.
+  const SNAP = PAYLOAD.snapshots || {};
+  const MARK = '⧗';
+  const isSnap = lib => Object.prototype.hasOwnProperty.call(SNAP, lib);
+  const labelOf = lib => isSnap(lib) ? `${lib} ${MARK}` : lib;
+  if(Object.keys(SNAP).length){
+    const note = document.getElementById('snapshotNote');
+    note.textContent = `${MARK} Carried over from an earlier run, not measured here: `
+      + Object.entries(SNAP).map(([k,v])=>`${k} (${v})`).join('  ·  ');
+    note.style.display = '';
+  }
+
   // Canonical library order (versions first, else first appearance) → stable color per library.
   const LIBS = PAYLOAD.versions ? Object.keys(PAYLOAD.versions)
              : [...new Set(PAYLOAD.scenarios.flatMap(s=>s.libraries))];
@@ -235,7 +249,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
 
   function buildLegend(){
     document.getElementById('legend').innerHTML =
-      LIBS.map(l=>`<span><i class="swatch" style="background:${COLORS[l]}"></i>${l}</span>`).join('');
+      LIBS.map(l=>`<span><i class="swatch" style="background:${COLORS[l]}"></i>${labelOf(l)}</span>`).join('');
   }
 
   const tip = document.getElementById('tip');
@@ -247,7 +261,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       if(nOK(d.tsd))  lines += `<div class="tt-line"><span>Std. dev.</span><b>${d.tsd.toLocaleString(undefined,{maximumFractionDigits:1})} ms</b></div>`;
       if(nOK(d.mem))  lines += `<div class="tt-line"><span>Allocated</span><b>${fmtMB(d.mem)}</b></div>`;
       tip.innerHTML =
-        `<div class="tt-head"><i class="swatch" style="background:${COLORS[d.lib]}"></i>${d.lib}</div>
+        `<div class="tt-head"><i class="swatch" style="background:${COLORS[d.lib]}"></i>${labelOf(d.lib)}</div>
          <div class="tt-op">${op.title}${op.tag?' · '+op.tag:''}</div>${lines}`;
       tip.style.opacity=1;
       const pad=14, w=tip.offsetWidth, h=tip.offsetHeight;
@@ -274,7 +288,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       panel.innerHTML =
         `<div class="tag">${op.tag}</div>
          <h2>${op.title}</h2>
-         <p class="best">${measure==='time'?'Fastest':'Leanest'} here: <b>${best.lib}</b> · ${fmtVal(valOf(best))}</p>
+         <p class="best">${measure==='time'?'Fastest':'Leanest'} here: <b>${labelOf(best.lib)}</b> · ${fmtVal(valOf(best))}</p>
          <div class="rows"></div>`;
       const rowsEl = panel.querySelector('.rows');
       rows.forEach(d=>{
@@ -294,7 +308,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
         const row = document.createElement('div');
         row.className = 'row';
         row.innerHTML =
-          `<div class="rlabel"><span class="name">${d.lib}</span><span class="val">${fmtVal(v)}${deltaStr}</span></div>
+          `<div class="rlabel"><span class="name">${labelOf(d.lib)}</span><span class="val">${fmtVal(v)}${deltaStr}</span></div>
            <div class="track"><div class="fill" style="width:${pct}%; background:${COLORS[d.lib]}"></div>${whisker}</div>`;
         attachTip(row, d);
         rowsEl.appendChild(row);
@@ -316,7 +330,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
           const op = OPS.find(o=>o.key===d.op);
           const num = (v,dp)=> nOK(v) ? v.toLocaleString(undefined,{minimumFractionDigits:dp,maximumFractionDigits:dp}) : '—';
           return `<tr>
-            <td><span class="sw" style="background:${COLORS[d.lib]}"></span>${d.lib}</td>
+            <td><span class="sw" style="background:${COLORS[d.lib]}"></span>${labelOf(d.lib)}</td>
             <td style="text-align:left">${op.title}</td>
             <td style="text-align:left">${op.tag}</td>
             <td>${num(d.time,2)}</td><td>${num(d.terr,2)}</td><td>${num(d.tsd,3)}</td><td>${num(d.mem,2)}</td>
@@ -359,7 +373,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       body += `<tr class="grp"><td colspan="5">${op.tag?'<b>'+op.tag+'</b> · ':''}${op.title}</td></tr>`;
       rows.forEach(d=>{
         body += `<tr>
-          <td class="rlib"><span class="sw" style="background:${COLORS[d.lib]}"></span>${d.lib}</td>
+          <td class="rlib"><span class="sw" style="background:${COLORS[d.lib]}"></span>${labelOf(d.lib)}</td>
           ${cell(d.time,tMin,tMax,fmtMs(d.time))}
           <td class="ratio">${(d.time/tMin).toFixed(1)}×</td>
           ${cell(d.mem,mMin,mMax,nOK(d.mem)?fmtMB(d.mem):'—')}

@@ -22,6 +22,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | NPOI | `NPOI` | 2.8.0 |
 | MiniExcel | `MiniExcel` | 1.45.0 |
 | XLibur | `XLibur.Bundle` | 0.106.1-beta.80 |
+| IronXL ⧗ | `IronXL.Excel` | 2026.7.2 |
 
 ## Scenarios
 
@@ -47,6 +48,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ✅ | ✅ | ⚠️ titled, invalid XML |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
+| IronXL ⧗ | ✅ | ⚠️ font colour only | ✅ | ✅ |
 
 ## Caveats
 
@@ -57,6 +59,11 @@ less work, so read its timing against this table.
 - MiniExcel has no formula engine; its write total is a pre-computed value rather than a
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
   report scenario entirely. All other differences are noted inline in the source.
+- **IronXL numbers marked ⧗ are snapshots.** It is commercial and cannot run without a licence
+  key, so unless the run that produced a page had one, its rows and chart points are replayed
+  from a previously captured run — different hardware, different day. The page names the version
+  and capture date. See the
+  [README](https://github.com/jafin/XLBench#ironxl--licence-gated-and-snapshotted) for detail.
 
 Results are produced by running the suite locally and committing the generated markdown —
 see the [repository README](https://github.com/jafin/XLBench) for how to reproduce.

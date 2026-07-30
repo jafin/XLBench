@@ -1,0 +1,53 @@
+{
+  "library": "IronXL",
+  "methods": {
+    "OpenWorkbook": {
+      "version": "2026.7.2",
+      "capturedUtc": "2026-07-30T07:02:44.3701070Z",
+      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
+      "job": "DefaultJob",
+      "timeMs": 4373.980453333333,
+      "allocMb": 7238.019416809082,
+      "errorMs": 42.637433712618105,
+      "stdDevMs": 39.883081967239235,
+      "tableHeader": "| Library     | Type                      | Method            | Mean          | Error       | StdDev      | Median        | Gen0        | Gen1        | Gen2       | Allocated   |",
+      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenWorkbook      |  4,373.980 ms |  42.6374 ms |  39.8831 ms |  4,376.416 ms | 453000.0000 | 125000.0000 |  8000.0000 |  7238.02 MB |"
+    },
+    "CreateStockReport": {
+      "version": "2026.7.2",
+      "capturedUtc": "2026-07-30T07:02:44.3701070Z",
+      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
+      "job": "DefaultJob",
+      "timeMs": 371.314,
+      "allocMb": 241.77799224853516,
+      "errorMs": 6.826492890369349,
+      "stdDevMs": 5.700430738257125,
+      "tableHeader": "| Library     | Type                      | Method            | Mean          | Error       | StdDev      | Median        | Gen0        | Gen1        | Gen2       | Allocated   |",
+      "tableRow": "| IronXL      | IronXlReportBenchmarks    | CreateStockReport |    371.314 ms |   6.8265 ms |   5.7004 ms |    370.820 ms |  14000.0000 |   3000.0000 |          - |   241.78 MB |"
+    },
+    "CreateAndSave": {
+      "version": "2026.7.2",
+      "capturedUtc": "2026-07-30T07:02:44.3701070Z",
+      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
+      "job": "DefaultJob",
+      "timeMs": 1017.09548,
+      "allocMb": 796.4375228881836,
+      "errorMs": 19.654553835831393,
+      "stdDevMs": 43.96022939232341,
+      "tableHeader": "| Library     | Type                      | Method            | Mean          | Error       | StdDev      | Median        | Gen0        | Gen1        | Gen2       | Allocated   |",
+      "tableRow": "| IronXL      | IronXlWriteBenchmarks     | CreateAndSave     |  1,017.095 ms |  19.6546 ms |  43.9602 ms |  1,006.866 ms |  49000.0000 |  18000.0000 |  4000.0000 |   796.44 MB |"
+    },
+    "OpenAndReadAll": {
+      "version": "2026.7.2",
+      "capturedUtc": "2026-07-30T07:02:44.3701070Z",
+      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
+      "job": "DefaultJob",
+      "timeMs": 16204.920513333334,
+      "allocMb": 12477.833320617676,
+      "errorMs": 268.2793349921154,
+      "stdDevMs": 250.94865651917686,
+      "tableHeader": "| Library     | Type                      | Method            | Mean          | Error       | StdDev      | Median        | Gen0        | Gen1        | Gen2       | Allocated   |",
+      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenAndReadAll    | 16,204.921 ms | 268.2793 ms | 250.9487 ms | 16,214.047 ms | 764000.0000 | 389000.0000 | 11000.0000 | 12477.83 MB |"
+    }
+  }
+}
