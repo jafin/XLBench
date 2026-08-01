@@ -8,20 +8,41 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 
 ## Libraries under test
 
-| Library | NuGet package | Version | Notes |
-| --- | --- | --- | --- |
-| [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 | High-level cell model |
-| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.6.3 | Requires a license declaration (non-commercial, set in code) |
-| [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming |
-| [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port |
-| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 | Bundles the SkiaSharp font engine (auto-registers) |
-| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
+| Library | NuGet package | Version | Notes | License |
+| --- | --- | --- | --- | --- |
+| [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 | High-level cell model | [MIT](https://licenses.nuget.org/MIT) |
+| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.6.3 | Requires a license declaration (non-commercial, set in code) | [Polyform Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) ᴬ |
+| [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming | [MIT](https://licenses.nuget.org/MIT) |
+| [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ |
+| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
+| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
 that one goes to the product page. Versions are the pinned NuGet package versions (see
 `src/XLBench/XLBench.csproj`); the generated `docs/results.md` reports the exact resolved
 versions from each run via reflection.
+
+Licenses are as declared by each pinned package (`<license>` in its `.nuspec`, or the license
+file it ships), not as reported by any third-party index. Four are plain permissive terms; the
+other three are not, and the distinction matters more than the benchmark numbers if you are
+choosing a library for commercial work:
+
+- **ᴬ EPPlus — noncommercial by default.** From 5.0 the free terms are Polyform Noncommercial,
+  which permits use only for noncommercial purposes; commercial use needs a paid licence from
+  EPPlus Software. That is what `Libraries/EpPlusLicense.cs` declares, and it is a licence
+  choice this benchmark repository is entitled to make — it is not a template for your product.
+- **ᴮ NPOI — Apache-2.0 code, fee-bearing binaries.** The source is Apache-2.0, but the NuGet
+  binary release ships an Open Source Maintenance Fee EULA on top: the fee applies to users who
+  use it in revenue-generating activity with annual gross revenue at or above US$10,000, and
+  those below are exempt. Accepting it is what `<AcceptNPOIOSMFLicense>` in the project file
+  does. Building from source under Apache-2.0 alone avoids the agreement entirely.
+- **IronXL** is proprietary throughout — there is no free tier, only a trial. See
+  [IronXL](#ironxl--licence-gated-and-snapshotted).
+
+This is a summary for orientation, read off the packages this repository pins. It is not legal
+advice, and it can go stale the moment a library relicenses — check the terms yourself before
+depending on any of them.
 
 ## Scenarios
 
