@@ -15,8 +15,8 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.106.1-beta.80 | Prerelease; bundles the SkiaSharp font engine (auto-registers). Ahead of stable 0.106.0 for the chart fixes the report scenario needs |
-| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.7.2 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 | Bundles the SkiaSharp font engine (auto-registers) |
+| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
 that one goes to the product page. Versions are the pinned NuGet package versions (see
@@ -102,11 +102,11 @@ XLibur and IronXL are each asked for one explicitly.
 - **MiniExcel — excluded.** It has neither conditional formatting nor charts, so it could only
   run the data-import third of the scenario. Timing that against libraries doing all three
   would be actively misleading, so it is left out rather than listed as a fast result.
-- **XLibur — pinned to a prerelease for this scenario.** Stable 0.106.0 wrote every series name
-  as a `<c:strRef>` with no required `<c:f>` (20 schema errors, one per series) and had no
-  legend API at all. Both are fixed in `0.106.1-beta.80`, which is what this repo now pins;
-  on it XLibur produces a schema-clean chart with a legend. Legends are opt-in there — a chart
-  XLibur creates has none until `Legend.Visible` is set.
+- **XLibur — legends are opt-in.** A chart XLibur creates has none until `Legend.Visible` is
+  set, so the report benchmark sets it explicitly. (This scenario used to force a prerelease
+  pin: stable `0.106.0` wrote every series name as a `<c:strRef>` with no required `<c:f>` —
+  20 schema errors, one per series — and had no legend API at all. Both fixes have since
+  shipped in stable, so the repo tracks the stable channel again from `0.200.0`.)
 
 ### IronXL — licence-gated and snapshotted
 
@@ -227,10 +227,9 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - IronXL's report timing covers the full scenario, but its conditional-format fill never reaches
   the file (see above). It still pays for building the rule, so the timing stays comparable —
   the artifact is what differs.
-- XLibur is pinned to a prerelease (`0.106.1-beta.80`) rather than stable `0.106.0`, because the
-  stable build cannot produce a valid chart for this scenario. That pin applies to the whole
-  package, so every XLibur number — read and write included — comes from the prerelease, not
-  from the latest stable release the other libraries are on.
+- Every library now runs on its latest stable release. XLibur was previously pinned to a
+  prerelease because stable `0.106.0` could not produce a valid chart for the report scenario;
+  `0.200.0` can, so that pin is gone and its read and write numbers come from stable too.
 
 ## Best-effort implementations
 
@@ -312,10 +311,28 @@ full run lives in `.github/workflows/benchmark.yml`.
 
 ## Dependency updates
 
-[Dependabot](.github/dependabot.yml) opens weekly PRs for outdated NuGet packages (the
-Excel libraries, BenchmarkDotNet, tooling) and GitHub Actions. Minor/patch bumps are
-grouped into one PR; majors get their own. `build.yml` validates each PR (build + a Dry
-smoke run). XLibur is a prerelease, so Dependabot tracks newer `rc` releases.
+To check every referenced package against nuget.org and bump the outdated ones in one pass:
+
+```pwsh
+# Report only — what could move, and to which version.
+./scripts/update-libraries.ps1
+
+# Fetch them (via `dotnet add package`, never by hand-editing the csproj).
+./scripts/update-libraries.ps1 -Apply
+
+# Narrow the scope.
+./scripts/update-libraries.ps1 -Apply -LibrariesOnly
+./scripts/update-libraries.ps1 -Package XLibur.Bundle -Apply
+```
+
+The report separates the Excel libraries under test from tooling/pins, so it is obvious
+whether a bump changes the published numbers. Stable releases only, except for a package
+already pinned to a prerelease (where the prerelease channel stays in scope) or when
+`-IncludePrerelease` is passed.
+
+[Dependabot](.github/dependabot.yml) covers the same ground automatically, opening weekly
+PRs for outdated NuGet packages and GitHub Actions. Minor/patch bumps are grouped into one
+PR; majors get their own. `build.yml` validates each PR (build + a Dry smoke run).
 
 > **Note:** merging a Dependabot PR updates the *package version and confirms it builds* —
 > it does **not** refresh the published benchmark numbers. After merging a library bump,
@@ -336,5 +353,6 @@ src/XLBench/
   Benchmarks/Write/*             # one class per library
 docs/                            # GitHub Pages content (index.md + generated results.md)
 snapshots/                       # committed results for libraries that need a licence key
-scripts/run-benchmarks.ps1
+scripts/run-benchmarks.ps1        # run the suite and publish docs/
+scripts/update-libraries.ps1      # check nuget.org for newer library versions and fetch them
 ```
