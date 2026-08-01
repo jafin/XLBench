@@ -22,7 +22,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 |
-| [IronXL](https://ironsoftware.com/csharp/excel/) ⧗ | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.7.2 |
+| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
 that one goes to the product page.
@@ -56,7 +56,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ✅ | ✅ | ⚠️ titled, invalid XML |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
-| IronXL ⧗ | ✅ | ⚠️ font colour only | ✅ | ✅ |
+| IronXL | ✅ | ⚠️ font colour only | ✅ | ✅ |
 
 ## Edit scenario — capability matrix
 
@@ -68,7 +68,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
-| IronXL ⧗ | ✅ | ✅ `RemoveRow()` | ✅ |
+| IronXL | ✅ | ✅ `RemoveRow()` | ✅ |
 
 ## Caveats
 
@@ -84,11 +84,11 @@ less work, so read its timing against this table.
   sum the benchmark computes and writes into the cached value itself. It is also the only
   library there doing a single ordered pass with no model to maintain — read its timing with
   both facts in mind.
-- **IronXL numbers marked ⧗ are snapshots.** It is commercial and cannot run without a licence
-  key, so unless the run that produced a page had one, its rows and chart points are replayed
-  from a previously captured run — different hardware, different day. The page names the version
-  and capture date, which is why the version above can trail the `IronXL.Excel` release the
-  repository currently references. See the
+- **IronXL is licence-gated.** It is commercial and cannot run without a key, so a run that
+  lacks one replays its rows and chart points from a previously captured run instead — marked
+  ⧗, and named with the version and capture date it came from. The current results carry no
+  such marks: every number on the page, IronXL included, was measured in one run on one
+  machine. See the
   [README](https://github.com/jafin/XLBench#ironxl--licence-gated-and-snapshotted) for detail.
 
 Results are produced by running the suite locally and committing the generated markdown —
