@@ -42,7 +42,7 @@ xychart-beta
     title "Read · open workbook — time (ms)"
     x-axis ["NPOI", "XLibur", "EPPlus", "ClosedXML", "IronXL"]
     y-axis "Time (ms)"
-    bar [240.58, 1355.57, 1809.58, 3696.3, 4601.88]
+    bar [115.35, 667.06, 850.51, 1695.84, 2201.53]
 ```
 
 ```mermaid
@@ -55,7 +55,7 @@ xychart-beta
     title "Read · open workbook — allocated (MB)"
     x-axis ["XLibur", "NPOI", "EPPlus", "ClosedXML", "IronXL"]
     y-axis "Allocated (MB)"
-    bar [158.32, 211.37, 1038.89, 1306.4, 7235.8]
+    bar [80.39, 105.92, 518.21, 654.05, 3717.76]
 ```
 
 ```mermaid
@@ -66,9 +66,9 @@ config:
 ---
 xychart-beta
     title "Read · open + read all cells — time (ms)"
-    x-axis ["XLibur", "EPPlus", "OpenXML SDK", "MiniExcel", "NPOI", "IronXL", "ClosedXML"]
+    x-axis ["MiniExcel", "OpenXML SDK", "EPPlus", "XLibur", "NPOI", "ClosedXML", "IronXL"]
     y-axis "Time (ms)"
-    bar [2273.54, 2399.58, 2453.87, 3926.54, 5119.41, 15636.72, 19975.88]
+    bar [671.28, 1129.47, 1156.47, 1160.99, 2545.35, 6184.32, 7788.2]
 ```
 
 ```mermaid
@@ -81,7 +81,7 @@ xychart-beta
     title "Read · open + read all cells — allocated (MB)"
     x-axis ["XLibur", "OpenXML SDK", "MiniExcel", "EPPlus", "NPOI", "ClosedXML", "IronXL"]
     y-axis "Allocated (MB)"
-    bar [644.47, 1255.32, 1350.26, 1853.58, 2157.21, 2177.89, 12475.61]
+    bar [320.05, 628.84, 629.7, 925.23, 1077.8, 1083.78, 6333.03]
 ```
 
 ```mermaid
@@ -94,7 +94,7 @@ xychart-beta
     title "Write · create + save — time (ms)"
     x-axis ["MiniExcel", "OpenXML SDK", "XLibur", "ClosedXML", "EPPlus", "NPOI", "IronXL"]
     y-axis "Time (ms)"
-    bar [60.68, 165.94, 237.01, 398.3, 437.09, 683.42, 919.85]
+    bar [60.57, 159.81, 240.58, 403.99, 450.61, 671.24, 920.66]
 ```
 
 ```mermaid
@@ -107,7 +107,7 @@ xychart-beta
     title "Write · create + save — allocated (MB)"
     x-axis ["XLibur", "MiniExcel", "OpenXML SDK", "ClosedXML", "NPOI", "EPPlus", "IronXL"]
     y-axis "Allocated (MB)"
-    bar [60.52, 84.59, 134.2, 181.09, 247.46, 322.9, 797.63]
+    bar [60.52, 84.59, 134.2, 181.1, 247.46, 322.9, 797.63]
 ```
 
 ```mermaid
@@ -118,9 +118,9 @@ config:
 ---
 xychart-beta
     title "Report · data + conditional formatting + chart — time (ms)"
-    x-axis ["OpenXML SDK", "XLibur", "EPPlus", "ClosedXML", "NPOI", "IronXL"]
+    x-axis ["OpenXML SDK", "XLibur", "ClosedXML", "EPPlus", "NPOI", "IronXL"]
     y-axis "Time (ms)"
-    bar [8.47, 9.28, 15.57, 16.84, 36.94, 376.81]
+    bar [8.75, 10.23, 17, 32.48, 32.73, 374.58]
 ```
 
 ```mermaid
@@ -133,7 +133,7 @@ xychart-beta
     title "Report · data + conditional formatting + chart — allocated (MB)"
     x-axis ["XLibur", "OpenXML SDK", "ClosedXML", "EPPlus", "NPOI", "IronXL"]
     y-axis "Allocated (MB)"
-    bar [3.49, 4.92, 8.02, 14, 16.26, 237.38]
+    bar [3.49, 4.92, 8.02, 14.14, 16.27, 237.38]
 ```
 
 ```mermaid
@@ -146,7 +146,7 @@ xychart-beta
     title "Edit · delete rows + set column + recalculate — time (ms)"
     x-axis ["OpenXML SDK", "EPPlus", "XLibur", "ClosedXML", "NPOI", "IronXL"]
     y-axis "Time (ms)"
-    bar [26.14, 96.72, 172.91, 350.47, 396, 1580.18]
+    bar [26.26, 90.99, 172.7, 351.02, 405.05, 1562.62]
 ```
 
 ```mermaid
@@ -159,7 +159,7 @@ xychart-beta
     title "Edit · delete rows + set column + recalculate — allocated (MB)"
     x-axis ["OpenXML SDK", "EPPlus", "XLibur", "ClosedXML", "NPOI", "IronXL"]
     y-axis "Allocated (MB)"
-    bar [9.8, 142.49, 164.9, 337.71, 413.38, 753.86]
+    bar [9.83, 142.49, 164.91, 337.93, 413.44, 753.86]
 ```
 
 ## Detailed results
@@ -180,59 +180,59 @@ MinWarmupIterationCount=1
 
 ### Read · open workbook
 
-| Library     | Type                      | Method             | Mean          | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated   |
-|------------ |-------------------------- |------------------- |--------------:|------------:|------------:|------------:|------------:|-----------:|------------:|
-| NPOI        | NpoiReadBenchmarks        | OpenWorkbook       |    240.580 ms |   6.6922 ms |   3.5001 ms |   4000.0000 |   3500.0000 |  1500.0000 |   211.37 MB |
-| XLibur      | XLiburReadBenchmarks      | OpenWorkbook       |  1,355.574 ms |  19.5937 ms |   8.6997 ms |  10000.0000 |   8000.0000 |  2000.0000 |   158.32 MB |
-| EPPlus      | EpPlusReadBenchmarks      | OpenWorkbook       |  1,809.577 ms | 154.6733 ms | 102.3068 ms |  41000.0000 |  17000.0000 |  7000.0000 |  1038.89 MB |
-| ClosedXML   | ClosedXmlReadBenchmarks   | OpenWorkbook       |  3,696.300 ms | 336.2086 ms | 222.3812 ms |  81000.0000 |  27000.0000 |  3000.0000 |   1306.4 MB |
-| IronXL      | IronXlReadBenchmarks      | OpenWorkbook       |  4,601.883 ms | 189.3216 ms | 125.2245 ms | 452000.0000 | 124000.0000 |  7000.0000 |   7235.8 MB |
+| Library     | Type                      | Method             | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |
+|------------ |-------------------------- |------------------- |-------------:|------------:|------------:|------------:|------------:|-----------:|-----------:|
+| NPOI        | NpoiReadBenchmarks        | OpenWorkbook       |   115.352 ms |   7.0058 ms |   4.6339 ms |   1500.0000 |   1000.0000 |   500.0000 |  105.92 MB |
+| XLibur      | XLiburReadBenchmarks      | OpenWorkbook       |   667.065 ms |  16.3350 ms |  10.8046 ms |   5000.0000 |   4000.0000 |  1000.0000 |   80.39 MB |
+| EPPlus      | EpPlusReadBenchmarks      | OpenWorkbook       |   850.507 ms |  21.9208 ms |  13.0447 ms |  23000.0000 |  11000.0000 |  6000.0000 |  518.21 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks   | OpenWorkbook       | 1,695.844 ms |  27.0546 ms |   9.6479 ms |  41000.0000 |  14000.0000 |  2000.0000 |  654.05 MB |
+| IronXL      | IronXlReadBenchmarks      | OpenWorkbook       | 2,201.535 ms |  37.5704 ms |  16.6815 ms | 235000.0000 |  67000.0000 |  7000.0000 | 3717.76 MB |
 
 ### Read · open + read all cells
 
-| Library     | Type                      | Method             | Mean          | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated   |
-|------------ |-------------------------- |------------------- |--------------:|------------:|------------:|------------:|------------:|-----------:|------------:|
-| XLibur      | XLiburReadBenchmarks      | OpenAndReadAll     |  2,273.535 ms |  52.9725 ms |  31.5231 ms |  28000.0000 |  21000.0000 |  4000.0000 |   644.47 MB |
-| EPPlus      | EpPlusReadBenchmarks      | OpenAndReadAll     |  2,399.582 ms | 153.1752 ms | 101.3159 ms |  92000.0000 |  18000.0000 |  7000.0000 |  1853.58 MB |
-| OpenXML SDK | OpenXmlReadBenchmarks     | OpenAndReadAll     |  2,453.869 ms |  45.4513 ms |  23.7719 ms |  80000.0000 |  11000.0000 |  2000.0000 |  1255.32 MB |
-| MiniExcel   | MiniExcelReadBenchmarks   | OpenAndReadAll     |  3,926.539 ms |  92.5153 ms |  61.1932 ms |  84000.0000 |   1000.0000 |          - |  1350.26 MB |
-| NPOI        | NpoiReadBenchmarks        | OpenAndReadAll     |  5,119.411 ms | 102.3483 ms |  45.4433 ms | 131000.0000 | 121000.0000 |  8000.0000 |  2157.21 MB |
-| IronXL      | IronXlReadBenchmarks      | OpenAndReadAll     | 15,636.720 ms | 552.9906 ms | 329.0759 ms | 764000.0000 | 389000.0000 | 11000.0000 | 12475.61 MB |
-| ClosedXML   | ClosedXmlReadBenchmarks   | OpenAndReadAll     | 19,975.885 ms | 385.8290 ms | 171.3105 ms | 117000.0000 |  44000.0000 |  4000.0000 |  2177.89 MB |
+| Library     | Type                      | Method             | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |
+|------------ |-------------------------- |------------------- |-------------:|------------:|------------:|------------:|------------:|-----------:|-----------:|
+| MiniExcel   | MiniExcelReadBenchmarks   | OpenAndReadAll     |   671.284 ms |  15.0368 ms |   9.9459 ms |  38000.0000 |   3000.0000 |          - |   629.7 MB |
+| OpenXML SDK | OpenXmlReadBenchmarks     | OpenAndReadAll     | 1,129.465 ms |  17.0569 ms |   6.0827 ms |  40000.0000 |   6000.0000 |  1000.0000 |  628.84 MB |
+| EPPlus      | EpPlusReadBenchmarks      | OpenAndReadAll     | 1,156.470 ms |  21.8833 ms |  13.0224 ms |  49000.0000 |  14000.0000 |  7000.0000 |  925.23 MB |
+| XLibur      | XLiburReadBenchmarks      | OpenAndReadAll     | 1,160.993 ms |  60.5590 ms |  40.0560 ms |  15000.0000 |  12000.0000 |  3000.0000 |  320.05 MB |
+| NPOI        | NpoiReadBenchmarks        | OpenAndReadAll     | 2,545.354 ms |  59.9458 ms |  31.3528 ms |  68000.0000 |  62000.0000 |  6000.0000 |  1077.8 MB |
+| ClosedXML   | ClosedXmlReadBenchmarks   | OpenAndReadAll     | 6,184.324 ms |  91.1430 ms |  40.4681 ms |  59000.0000 |  23000.0000 |  3000.0000 | 1083.78 MB |
+| IronXL      | IronXlReadBenchmarks      | OpenAndReadAll     | 7,788.195 ms | 256.7315 ms | 169.8120 ms | 393000.0000 | 202000.0000 | 10000.0000 | 6333.03 MB |
 
 ### Write · create + save
 
-| Library     | Type                      | Method             | Mean          | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated   |
-|------------ |-------------------------- |------------------- |--------------:|------------:|------------:|------------:|------------:|-----------:|------------:|
-| MiniExcel   | MiniExcelWriteBenchmarks  | CreateAndSave      |     60.680 ms |   3.5682 ms |   2.3601 ms |   5666.6667 |   1777.7778 |  1666.6667 |    84.59 MB |
-| OpenXML SDK | OpenXmlWriteBenchmarks    | CreateAndSave      |    165.942 ms |   3.2585 ms |   1.1620 ms |   8750.0000 |   2000.0000 |  2000.0000 |    134.2 MB |
-| XLibur      | XLiburWriteBenchmarks     | CreateAndSave      |    237.015 ms |  10.4093 ms |   6.8851 ms |   3000.0000 |   2000.0000 |  2000.0000 |    60.52 MB |
-| ClosedXML   | ClosedXmlWriteBenchmarks  | CreateAndSave      |    398.299 ms |  16.1683 ms |  10.6944 ms |  10000.0000 |   5000.0000 |  2000.0000 |   181.09 MB |
-| EPPlus      | EpPlusWriteBenchmarks     | CreateAndSave      |    437.093 ms |  13.0271 ms |   8.6166 ms |  20000.0000 |   9000.0000 |  3000.0000 |    322.9 MB |
-| NPOI        | NpoiWriteBenchmarks       | CreateAndSave      |    683.421 ms |  29.0891 ms |  19.2406 ms |  16000.0000 |  12000.0000 |  3000.0000 |   247.46 MB |
-| IronXL      | IronXlWriteBenchmarks     | CreateAndSave      |    919.853 ms |  24.6276 ms |  14.6555 ms |  48000.0000 |  16000.0000 |  3000.0000 |   797.63 MB |
+| Library     | Type                      | Method             | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |
+|------------ |-------------------------- |------------------- |-------------:|------------:|------------:|------------:|------------:|-----------:|-----------:|
+| MiniExcel   | MiniExcelWriteBenchmarks  | CreateAndSave      |    60.567 ms |   2.5892 ms |   1.7126 ms |   5666.6667 |   1777.7778 |  1666.6667 |   84.59 MB |
+| OpenXML SDK | OpenXmlWriteBenchmarks    | CreateAndSave      |   159.807 ms |   5.0679 ms |   3.3521 ms |   8750.0000 |   2000.0000 |  2000.0000 |   134.2 MB |
+| XLibur      | XLiburWriteBenchmarks     | CreateAndSave      |   240.578 ms |   6.6558 ms |   4.4024 ms |   3000.0000 |   2000.0000 |  2000.0000 |   60.52 MB |
+| ClosedXML   | ClosedXmlWriteBenchmarks  | CreateAndSave      |   403.994 ms |  22.1120 ms |  13.1585 ms |  10000.0000 |   5000.0000 |  2000.0000 |   181.1 MB |
+| EPPlus      | EpPlusWriteBenchmarks     | CreateAndSave      |   450.612 ms |  24.3108 ms |  16.0801 ms |  20000.0000 |   9000.0000 |  3000.0000 |   322.9 MB |
+| NPOI        | NpoiWriteBenchmarks       | CreateAndSave      |   671.236 ms |  20.4890 ms |  13.5522 ms |  16000.0000 |  12000.0000 |  3000.0000 |  247.46 MB |
+| IronXL      | IronXlWriteBenchmarks     | CreateAndSave      |   920.655 ms |  65.9367 ms |  43.6131 ms |  48000.0000 |  16000.0000 |  3000.0000 |  797.63 MB |
 
 ### Report · data + conditional formatting + chart
 
-| Library     | Type                      | Method             | Mean          | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated   |
-|------------ |-------------------------- |------------------- |--------------:|------------:|------------:|------------:|------------:|-----------:|------------:|
-| OpenXML SDK | OpenXmlReportBenchmarks   | CreateStockReport  |      8.472 ms |   0.2158 ms |   0.1427 ms |    375.0000 |    359.3750 |   187.5000 |     4.92 MB |
-| XLibur      | XLiburReportBenchmarks    | CreateStockReport  |      9.282 ms |   0.4554 ms |   0.3012 ms |    187.5000 |    187.5000 |   187.5000 |     3.49 MB |
-| EPPlus      | EpPlusReportBenchmarks    | CreateStockReport  |     15.572 ms |   0.4645 ms |   0.3072 ms |   1000.0000 |   1000.0000 |  1000.0000 |       14 MB |
-| ClosedXML   | ClosedXmlReportBenchmarks | CreateStockReport  |     16.843 ms |   0.4485 ms |   0.2967 ms |    468.7500 |    187.5000 |    31.2500 |     8.02 MB |
-| NPOI        | NpoiReportBenchmarks      | CreateStockReport  |     36.942 ms |  10.3756 ms |   6.8628 ms |    875.0000 |    750.0000 |   375.0000 |    16.26 MB |
-| IronXL      | IronXlReportBenchmarks    | CreateStockReport  |    376.810 ms |  33.6671 ms |  22.2687 ms |  14000.0000 |   3000.0000 |          - |   237.38 MB |
+| Library     | Type                      | Method             | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |
+|------------ |-------------------------- |------------------- |-------------:|------------:|------------:|------------:|------------:|-----------:|-----------:|
+| OpenXML SDK | OpenXmlReportBenchmarks   | CreateStockReport  |     8.748 ms |   0.5657 ms |   0.3742 ms |    375.0000 |    359.3750 |   187.5000 |    4.92 MB |
+| XLibur      | XLiburReportBenchmarks    | CreateStockReport  |    10.227 ms |   0.6561 ms |   0.4340 ms |    187.5000 |    187.5000 |   187.5000 |    3.49 MB |
+| ClosedXML   | ClosedXmlReportBenchmarks | CreateStockReport  |    17.002 ms |   0.4934 ms |   0.3263 ms |    468.7500 |    187.5000 |    31.2500 |    8.02 MB |
+| EPPlus      | EpPlusReportBenchmarks    | CreateStockReport  |    32.477 ms |  14.3185 ms |   9.4708 ms |   1000.0000 |   1000.0000 |  1000.0000 |   14.14 MB |
+| NPOI        | NpoiReportBenchmarks      | CreateStockReport  |    32.725 ms |   2.0044 ms |   1.0484 ms |    888.8889 |    777.7778 |   444.4444 |   16.27 MB |
+| IronXL      | IronXlReportBenchmarks    | CreateStockReport  |   374.579 ms |  38.1427 ms |  19.9494 ms |  14000.0000 |   3000.0000 |          - |  237.38 MB |
 
 ### Edit · delete rows + set column + recalculate
 
-| Library     | Type                      | Method             | Mean          | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated   |
-|------------ |-------------------------- |------------------- |--------------:|------------:|------------:|------------:|------------:|-----------:|------------:|
-| OpenXML SDK | OpenXmlEditBenchmarks     | EditAndRecalculate |     26.137 ms |   0.5362 ms |   0.3547 ms |    718.7500 |    656.2500 |   156.2500 |      9.8 MB |
-| EPPlus      | EpPlusEditBenchmarks      | EditAndRecalculate |     96.717 ms |   6.6784 ms |   4.4174 ms |   9000.0000 |   1200.0000 |  1000.0000 |   142.49 MB |
-| XLibur      | XLiburEditBenchmarks      | EditAndRecalculate |    172.911 ms |   9.5981 ms |   6.3486 ms |  10333.3333 |    333.3333 |          - |    164.9 MB |
-| ClosedXML   | ClosedXmlEditBenchmarks   | EditAndRecalculate |    350.470 ms |   8.9962 ms |   5.9505 ms |  21000.0000 |   1000.0000 |          - |   337.71 MB |
-| NPOI        | NpoiEditBenchmarks        | EditAndRecalculate |    395.996 ms |  10.2234 ms |   6.7621 ms |  25000.0000 |   1000.0000 |          - |   413.38 MB |
-| IronXL      | IronXlEditBenchmarks      | EditAndRecalculate |  1,580.177 ms |  34.8355 ms |  20.7301 ms |  57000.0000 |  35000.0000 | 15000.0000 |   753.86 MB |
+| Library     | Type                      | Method             | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |
+|------------ |-------------------------- |------------------- |-------------:|------------:|------------:|------------:|------------:|-----------:|-----------:|
+| OpenXML SDK | OpenXmlEditBenchmarks     | EditAndRecalculate |    26.257 ms |   0.5420 ms |   0.3585 ms |    687.5000 |    593.7500 |   156.2500 |    9.83 MB |
+| EPPlus      | EpPlusEditBenchmarks      | EditAndRecalculate |    90.994 ms |   3.2045 ms |   2.1196 ms |   9000.0000 |   1200.0000 |  1000.0000 |  142.49 MB |
+| XLibur      | XLiburEditBenchmarks      | EditAndRecalculate |   172.699 ms |   3.2540 ms |   2.1523 ms |  10333.3333 |    333.3333 |          - |  164.91 MB |
+| ClosedXML   | ClosedXmlEditBenchmarks   | EditAndRecalculate |   351.020 ms |  16.9362 ms |  10.0785 ms |  21000.0000 |   1000.0000 |          - |  337.93 MB |
+| NPOI        | NpoiEditBenchmarks        | EditAndRecalculate |   405.051 ms |   7.3577 ms |   4.8667 ms |  25000.0000 |   1000.0000 |          - |  413.44 MB |
+| IronXL      | IronXlEditBenchmarks      | EditAndRecalculate | 1,562.616 ms |  46.5205 ms |  27.6836 ms |  57000.0000 |  36000.0000 | 15000.0000 |  753.86 MB |
 
 
 

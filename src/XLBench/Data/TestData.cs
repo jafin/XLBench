@@ -16,7 +16,22 @@ namespace XLBench.Data;
 /// </summary>
 public static class TestData
 {
-    public const int ReadRowCount = 100_000;
+    /// <summary>
+    /// Rows in the shared read workbook.
+    /// </summary>
+    /// <remarks>
+    /// The read scenario is linear in this number and was by far the most expensive part of a
+    /// full run at 100,000 — <c>OpenAndReadAll</c> alone accounted for roughly eight of the
+    /// suite's twenty-one minutes, with ClosedXML at ~20 s and IronXL at ~16 s per operation.
+    ///
+    /// <para>50,000 halves that while deliberately staying large: at 750,000 cells the scenario
+    /// is not merely throughput-bound but still heavy enough to put the eager-model libraries
+    /// into multi-gigabyte territory, which is the finding the allocation column exists to
+    /// carry. Cutting further (25,000 was measured and rejected for this reason) keeps the
+    /// ranking intact but pulls those figures down to a point where they read as per-cell
+    /// overhead rather than as the memory cost of holding a real sheet.</para>
+    /// </remarks>
+    public const int ReadRowCount = 50_000;
     public const int ReadColCount = 15;
     public const int WriteRowCount = 50_000;
 
