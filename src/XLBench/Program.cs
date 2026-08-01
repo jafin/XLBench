@@ -549,24 +549,28 @@ namespace XLBench
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // Replay any snapshotted rows for libraries that could not run (see LibrarySnapshot).
-            // Two guards, because a snapshot is by definition a row from a different run:
-            // the column *set* must match (compared by name — BenchmarkDotNet re-pads cell widths
-            // every run, so the raw header strings rarely match), and the Mean column must be in
-            // the same unit, since BenchmarkDotNet picks units per table. Either mismatch would
-            // put wrong numbers under right-looking headings, so the row is dropped instead.
+            // A snapshot is by definition a row from a different run, so its cells are matched to
+            // this run's columns *by header name* rather than by position — BenchmarkDotNet re-pads
+            // cell widths every run, and picks some columns per summary (Median only appears for
+            // certain distributions), so the raw header strings rarely match even for the same job.
+            // Two things can still make a row unusable, and both drop it rather than put wrong
+            // numbers under right-looking headings: a column this run renders that the snapshot
+            // never captured, and a Mean recorded in a different unit, since units are per-table.
             foreach (var ((library, method), entry) in SnapshotRows)
             {
                 if (entry.TableRow is not { Length: > 0 } row) continue;
                 if (entry.TableHeader is not { } storedHeader) continue;
                 if (!byMethod.TryGetValue(method, out var list)) continue;
 
-                if (!SplitRow(storedHeader).SequenceEqual(headers, StringComparer.OrdinalIgnoreCase))
+                if (ProjectOntoColumns(row, storedHeader, headers) is not { } projected)
                 {
                     Console.WriteLine(
-                        $"[XLBench] Omitting snapshotted {library}.{method} row from the table: it was " +
-                        "captured under a different column set (usually a different --job). The chart data still uses it.");
+                        $"[XLBench] Omitting snapshotted {library}.{method} row from the table: this run " +
+                        "reports a column the snapshot never captured (usually a different --job). " +
+                        "The chart data still uses it.");
                     continue;
                 }
+                row = projected;
 
                 var liveUnit = UnitOf(SplitRow(list[0]).ElementAtOrDefault(meanCol));
                 var snapshotUnit = UnitOf(SplitRow(row).ElementAtOrDefault(meanCol));
@@ -606,6 +610,30 @@ namespace XLBench
 
         private static string[] SplitRow(string line) =>
             line.Trim().Trim('|').Split('|').Select(c => c.Trim()).ToArray();
+
+        /// <summary>
+        /// Re-orders a snapshotted row to match <paramref name="targetHeaders"/>, matching cells by
+        /// header name. Columns the snapshot captured but this run does not render (typically
+        /// Median, which BenchmarkDotNet only emits for some distributions) are dropped; a column
+        /// this run renders that the snapshot lacks returns <c>null</c>, since the only ways to
+        /// fill it would be to invent a value or to silently shift every later cell.
+        /// </summary>
+        private static string? ProjectOntoColumns(string row, string storedHeader, string[] targetHeaders)
+        {
+            var storedHeaders = SplitRow(storedHeader);
+            var storedCells = SplitRow(row);
+
+            var projected = new string[targetHeaders.Length];
+            for (var i = 0; i < targetHeaders.Length; i++)
+            {
+                var source = Array.FindIndex(storedHeaders,
+                    h => h.Equals(targetHeaders[i], StringComparison.OrdinalIgnoreCase));
+                if (source < 0 || source >= storedCells.Length) return null;
+                projected[i] = storedCells[source];
+            }
+
+            return $"| {string.Join(" | ", projected)} |";
+        }
 
         /// <summary>
         /// Tags a replayed row's Library cell so a snapshot is never mistaken for a live

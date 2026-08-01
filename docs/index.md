@@ -21,7 +21,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.106.1-beta.80 |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) ⧗ | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.7.2 |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
@@ -65,7 +65,8 @@ less work, so read its timing against this table.
 - **IronXL numbers marked ⧗ are snapshots.** It is commercial and cannot run without a licence
   key, so unless the run that produced a page had one, its rows and chart points are replayed
   from a previously captured run — different hardware, different day. The page names the version
-  and capture date. See the
+  and capture date, which is why the version above can trail the `IronXL.Excel` release the
+  repository currently references. See the
   [README](https://github.com/jafin/XLBench#ironxl--licence-gated-and-snapshotted) for detail.
 
 Results are produced by running the suite locally and committing the generated markdown —
