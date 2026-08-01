@@ -25,7 +25,7 @@ versions from each run via reflection.
 
 ## Scenarios
 
-**Read** (100,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
+**Read** (50,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
 
 - `OpenWorkbook` — load the workbook into memory (eager-model libraries only).
 - `OpenAndReadAll` — open, then read every populated cell as a string using each library's
@@ -240,7 +240,7 @@ and both `conditionalFormatting` blocks carry the correct `sqref` and relative f
   own XML docs cross-reference `NPOI.SS.Formula.Formula`. The artifact is 79 KB against NPOI's
   79 KB and ClosedXML's 45 KB. Expect NPOI-shaped behaviour and NPOI-shaped output quirks.
 - **`WorkBook` is not `IDisposable`.** The only eager-model library here with no deterministic
-  release of a loaded workbook — relevant at the 100,000 × 15 read size.
+  release of a loaded workbook — relevant at the 50,000 × 15 read size.
 - **No `SaveAs(Stream)`.** `ToStream()` allocates and returns its own `MemoryStream`, so the
   whole workbook is buffered in memory whatever the real destination is. The write benchmark
   measures that buffer because there is no way not to.
@@ -280,6 +280,12 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   `EditAndRecalculate`.
 - The shared read file, and the edit scenario's source workbook, are generated once with
   ClosedXML purely as a neutral OOXML producer, outside any measured region.
+- Read timings and allocations both scale linearly with the sheet, which is 50,000 × 15
+  (750,000 cells). That size is deliberate: it is well past the point where the fixed cost of
+  opening the package matters, and still heavy enough to push the eager-model libraries into
+  multi-gigabyte allocation — which is the finding the allocation column is there to carry. A
+  smaller sheet keeps the ranking but flattens that into per-cell overhead.
+  `TestData.ReadRowCount` is one constant if you want a deeper run.
 - Edit timings are comparable across all six libraries — they produce identical sheets — with
   the OpenXML SDK the one caveat: it has no calculation engine, so its "recalculation" is a sum
   the benchmark computes and writes into the cached value itself.

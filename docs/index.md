@@ -30,7 +30,7 @@ that one goes to the product page.
 ## Scenarios
 
 - **Read** — `OpenWorkbook` (load into memory) and `OpenAndReadAll` (open + read every cell)
-  over a 100,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
+  over a 50,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
 - **Report** — `CreateStockReport` imports 20 tickers × 260 weekly closing prices from JSON
