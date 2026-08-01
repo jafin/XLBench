@@ -9,10 +9,11 @@
     <AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>
   </PropertyGroup>
 
-  <!-- Source dataset for the report scenario. Embedded (not copied) so it resolves regardless
-       of the working directory BenchmarkDotNet gives its generated child processes. -->
+  <!-- Source datasets for the report and edit scenarios. Embedded (not copied) so they resolve
+       regardless of the working directory BenchmarkDotNet gives its generated child processes. -->
   <ItemGroup>
     <EmbeddedResource Include="Data\stock_data.json" LogicalName="XLBench.Data.stock_data.json" />
+    <EmbeddedResource Include="Data\numbers.csv" LogicalName="XLBench.Data.numbers.csv" />
   </ItemGroup>
 
   <ItemGroup>

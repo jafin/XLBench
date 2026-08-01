@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 
 namespace XLBench.Data;
 
@@ -104,19 +103,7 @@ public static class ReportLayout
     }
 
     /// <summary>Converts a 1-based column index to its A1 column letters (1 -> A, 27 -> AA).</summary>
-    public static string ColumnLetter(int column)
-    {
-        ArgumentOutOfRangeException.ThrowIfLessThan(column, 1);
-
-        var sb = new StringBuilder(3);
-        while (column > 0)
-        {
-            var rem = (column - 1) % 26;
-            sb.Insert(0, (char)('A' + rem));
-            column = (column - 1) / 26;
-        }
-        return sb.ToString();
-    }
+    public static string ColumnLetter(int column) => A1.ColumnLetter(column);
 
     /// <summary>Absolute sheet-qualified reference for a price column's values, e.g. <c>'Weekly Prices'!$C$2:$C$53</c>.</summary>
     public static string PriceColumnRef(int symbolIndex)
