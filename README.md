@@ -56,6 +56,26 @@ Unlike Read/Write, this scenario is deliberately *not* volume-bound — at 5,742
 timings are dominated by how each library models styles, rules and DrawingML, not by
 throughput. Its real output is the capability matrix below.
 
+**Edit** (`EditAndRecalculate` — mutate an existing workbook, then get the formulas right):
+
+- *Init, not measured.* A canonical `.xlsx` is built once from `src/XLBench/Data/numbers.csv`
+  (the first 500 of its 4,000 rows × 20 numeric columns — see below for why): a header row,
+  then each data row carrying a `SUM(A:T)` row total in column U, with every second sheet row
+  bold. Every library opens these exact bytes.
+- *Measured.* Open the workbook, **delete every third data row** (sheet rows 4, 7, 10 … — 166
+  of the 500, leaving 334), **set column A to `20`** on every surviving data row, then
+  **recalculate** so each row's `SUM` reflects both edits. The result read back is the last
+  surviving row's total, which `dotnet run -- edit` checks against the value computed straight
+  from the CSV — every library must agree to the last ulp.
+- Saving the edited workbook is *not* measured: serialization is what `CreateAndSave` already
+  covers, and folding it in here would bury the difference this scenario exists to show.
+
+The interesting cost is the delete. Removing a row means shifting every row beneath it up *and*
+rewriting their `SUM` ranges, so a run of non-contiguous deletes is quadratic in every library
+that maintains a cell model — and the constant factor varies by more than an order of magnitude
+between them. It also separates the libraries that own a calculation engine from the one that
+does not.
+
 Every benchmark uses `[MemoryDiagnoser]`, so allocations and Gen0/1/2 collections are
 reported alongside timings. A joined summary adds a **Library** column so libraries line up
 per scenario.
@@ -107,6 +127,46 @@ XLibur and IronXL are each asked for one explicitly.
   pin: stable `0.106.0` wrote every series name as a `<c:strRef>` with no required `<c:f>` —
   20 schema errors, one per series — and had no legend API at all. Both fixes have since
   shipped in stable, so the repo tracks the stable channel again from `0.200.0`.)
+
+### Edit scenario — capability matrix
+
+| Library | Open + edit in place | Delete row (shift + reference fixup) | Calculation engine | Artifact valid? |
+| --- | :-: | :-: | :-: | --- |
+| ClosedXML | ✅ | ✅ `IXLRow.Delete()` | ✅ | ✅ |
+| EPPlus | ✅ | ✅ `DeleteRow()` | ✅ | ✅ |
+| OpenXML SDK | ⚠️ manual | ⚠️ manual | ❌ computed by the benchmark | ✅ |
+| NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ | ✅ |
+| MiniExcel | ❌ | ❌ | ❌ | — not benchmarked |
+| XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ | ✅ |
+| IronXL | ✅ | ✅ `RemoveRow()` | ✅ | ✅ |
+
+Unlike the report scenario, every benchmarked library here does the *same* work and produces the
+same 335-row sheet: `A` = 20 on every data row, every `SUM(A{r}:T{r})` renumbered to its new row,
+the bold-row pattern carried up with the shift, and totals that agree to the last ulp. The
+timings are therefore directly comparable — with the OpenXML SDK the one caveat noted below.
+`dotnet run -- edit` re-checks all of that against the CSV on every pass.
+
+- **NPOI — no delete-and-close-gap call.** `ISheet.RemoveRow` only empties the slot; closing it
+  takes a separate `ShiftRows` over everything below, which is also what rewrites the shifted
+  rows' `SUM` ranges. Two calls per deleted row, each touching every row beneath it. That is the
+  finding rather than an artifact of how the benchmark is written — no bulk API exists to use
+  instead.
+- **OpenXML SDK — everything by hand, and no recalculation at all.** There is no `DeleteRow`:
+  rows are `Remove()`d from `SheetData` and every surviving row below then has its `r` attribute,
+  each of its cells' `CellReference`, and its `SUM` range renumbered explicitly. There is also no
+  calculation engine, so the benchmark adds each row up itself and writes the result into the
+  formula cell's cached `<v>`, drops the now-stale `calcChain` part, and sets `fullCalcOnLoad` so
+  Excel rebuilds both on open. Read its timing against that: it is the only library here doing a
+  single ordered pass with no model to maintain, and the only one whose "recalculation" is
+  arithmetic the benchmark wrote.
+- **MiniExcel — excluded.** It is a streaming reader/writer with no cell model, so there is
+  nothing to open and mutate in place, and no formula support to recalculate. It could not run
+  any part of this scenario.
+- **Why 500 rows and not the full 4,000 in `numbers.csv`.** The quadratic delete cost is real: at
+  the full file NPOI takes ~178 s *per operation*, which is roughly 80 minutes of measured run for
+  this scenario alone. 500 rows keeps the quadratic shape and the ranking between libraries while
+  bringing the whole scenario down to a couple of minutes. The row count is a single constant —
+  `EditData.MaxRows` — so a deeper run is a one-line change.
 
 ### IronXL — licence-gated and snapshotted
 
@@ -192,13 +252,20 @@ and both `conditionalFormatting` blocks carry the correct `sqref` and relative f
 
 ### Reviewable output
 
-The report benchmarks keep their workbooks. Each run writes `output/stock-report-<library>.xlsx`
-(git-ignored, overwritten on the next run) so the result can be opened and eyeballed:
+The report and edit benchmarks keep their workbooks. Each run writes
+`output/stock-report-<library>.xlsx` and `output/numbers-edited-<library>.xlsx` (git-ignored,
+overwritten on the next run) so the results can be opened and eyeballed:
 
 ```pwsh
 # Just write the artifacts — same code path, no measurement (seconds, not minutes).
 dotnet run -c Release --project src/XLBench -- report
+dotnet run -c Release --project src/XLBench -- edit
 ```
+
+`-- edit` additionally verifies each library's recalculated row total against the value computed
+straight from `numbers.csv` and prints `OK` or `MISMATCH` per library, so the scenario's
+correctness can be checked without a measured run. The elapsed time it prints is one cold pass —
+indicative only, never a benchmark result.
 
 Saving happens in `[GlobalCleanup]`, once per library and outside every measured iteration, by
 re-running the build against a `FileStream` — so file I/O never lands in the timings. If a
@@ -209,8 +276,13 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - OpenXML SDK and MiniExcel are streaming APIs with no eager "load workbook" step, so they
   only appear in `OpenAndReadAll`.
 - MiniExcel has no formula engine; its write total is a pre-computed value, not a `SUM()`.
-- The shared read file is generated once with ClosedXML purely as a neutral OOXML producer,
-  outside any measured region.
+- MiniExcel cannot open and mutate a workbook in place, so it does not appear in
+  `EditAndRecalculate`.
+- The shared read file, and the edit scenario's source workbook, are generated once with
+  ClosedXML purely as a neutral OOXML producer, outside any measured region.
+- Edit timings are comparable across all six libraries — they produce identical sheets — with
+  the OpenXML SDK the one caveat: it has no calculation engine, so its "recalculation" is a sum
+  the benchmark computes and writes into the cached value itself.
 - The report scenario's JSON is parsed once into a shared week × symbol matrix, also outside
   any measured region — the deserialization is identical for every library and would only add
   the same constant to each result.
@@ -269,12 +341,15 @@ wrong or out of date, an issue is enough; you don't have to write the code.
 ## Running
 
 ```pwsh
-# Full suite (writes docs/results.md) — takes a while at full fidelity.
+# Full suite (writes docs/results.md), with the tuned warmup/iteration counts below.
 ./scripts/run-benchmarks.ps1
 
-# Subset / faster run
+# Subset
 ./scripts/run-benchmarks.ps1 -Filter '*Write*'
 ./scripts/run-benchmarks.ps1 -Filter '*Read*' -Job short
+
+# BenchmarkDotNet's stock defaults — slowest, most trustworthy. Use for published numbers.
+./scripts/run-benchmarks.ps1 -FullFidelity
 ```
 
 Or directly:
@@ -283,6 +358,34 @@ Or directly:
 dotnet run -c Release --project src/XLBench -- --filter '*'
 dotnet run -c Release --project src/XLBench -- --filter '*ClosedXml*' --job short
 ```
+
+### Warmup and iteration counts
+
+Every scenario here runs between 25 ms and 20 s per operation, so BenchmarkDotNet's stock
+floors — a 6-iteration minimum warmup and a 15-iteration minimum workload — cost minutes per
+benchmark buying accuracy this comparison does not need. The libraries differ by 2–10×, far
+outside any plausible confidence interval. `run-benchmarks.ps1` therefore lowers the bounds on
+both adaptive stages by default:
+
+| Stage | BenchmarkDotNet default | XLBench default |
+| --- | --- | --- |
+| Warmup | 6 – 50 | 1 – 3 |
+| Workload | 15 – 100 | 5 – 10 |
+
+Both stages still stop early once measurements settle, so these move the floor and ceiling
+rather than pinning a count: a stable benchmark finishes at the minimum, and only a noisy one
+runs to the maximum. Measured on the edit scenario, this cut the wall clock from 2m34s to 1m05s
+with means within ~5% of a full-fidelity run, the ranking unchanged, and Error columns 2–3×
+wider.
+
+That trade is right for comparing libraries and **wrong for detecting a few-percent regression
+between versions of one library** — use `-FullFidelity` for the numbers you publish after a
+dependency bump. Individual bounds are overridable (`-MinIterationCount`, `-MaxWarmupCount`, …),
+and a `-Job` preset pins the counts outright and so takes precedence over all of them.
+
+> BenchmarkDotNet validates that each maximum exceeds its minimum and fails the run otherwise,
+> so lowering a maximum past the stock minimum means lowering the minimum in the same call.
+> `--maxIterationCount 10` on its own is rejected, because the minimum is still 15.
 
 The run publishes a curated `docs/results.md` (raw BenchmarkDotNet output under
 `BenchmarkDotNet.Artifacts/` is git-ignored). Commit and push `docs/` to update Pages.
@@ -299,12 +402,13 @@ full run lives in `.github/workflows/benchmark.yml`.
 
 1. Add the NuGet `PackageReference` to `src/XLBench/XLBench.csproj`.
 2. Add `Read/<Name>ReadBenchmarks.cs`, `Write/<Name>WriteBenchmarks.cs` and (where the library
-   can express it) `Report/<Name>ReportBenchmarks.cs`, mirroring an existing set. Method names
-   must match — `OpenWorkbook` / `OpenAndReadAll` / `CreateAndSave` / `CreateStockReport` — so
-   the joined summary aligns.
+   can express them) `Report/<Name>ReportBenchmarks.cs` and `Edit/<Name>EditBenchmarks.cs`,
+   mirroring an existing set. Method names must match — `OpenWorkbook` / `OpenAndReadAll` /
+   `CreateAndSave` / `CreateStockReport` / `EditAndRecalculate` — so the joined summary aligns.
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
-4. For a report benchmark, register it in `Data/ReportArtifacts.cs` so `dotnet run -- report`
-   writes its workbook, and add a row to the capability matrix above.
+4. For a report or edit benchmark, register it in `Data/ReportArtifacts.cs` or
+   `Data/EditArtifacts.cs` so `dotnet run -- report` / `-- edit` writes its workbook, and add a
+   row to the matching capability matrix above.
 5. If the library needs credentials to run at all, add it to `SnapshotLibraries` in
    `Program.cs` and gate it in `BenchmarkConfig` the way IronXL is, so runs without those
    credentials replay `snapshots/<library>.json` instead of failing.
@@ -346,11 +450,15 @@ src/XLBench/
   Program.cs                     # switcher + results publisher (-> docs/)
   Config/LibraryComparisonConfig # joined summary, Library column, memory diagnoser, GH export
   Data/TestData.cs               # shared deterministic dataset (seed 42)
+  Data/StockData.cs              # report-scenario dataset (embedded stock_data.json)
+  Data/EditData.cs               # edit-scenario dataset + source workbook (embedded numbers.csv)
   Data/LibrarySnapshot.cs        # persisted results for licence-gated libraries
   Libraries/EpPlusLicense.cs     # EPPlus non-commercial license declaration
   Libraries/IronXlLicense.cs     # IronXL commercial key (opt-in via XLBENCH_IRONXL_KEY)
   Benchmarks/Read/*              # one class per library
   Benchmarks/Write/*             # one class per library
+  Benchmarks/Report/*            # one class per library that can express the scenario
+  Benchmarks/Edit/*              # one class per library that can express the scenario
 docs/                            # GitHub Pages content (index.md + generated results.md)
 snapshots/                       # committed results for libraries that need a licence key
 scripts/run-benchmarks.ps1        # run the suite and publish docs/

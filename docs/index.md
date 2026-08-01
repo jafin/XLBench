@@ -37,6 +37,11 @@ that one goes to the product page.
   (five years, 5,200 records), lays them out as a 261 × 22 sheet, conditionally formats every
   price green or red against the prior week's close, auto-fits the week-ending column, and
   plots all 20 symbols as a line chart. Feature-bound, not volume-bound.
+- **Edit** — `EditAndRecalculate` opens a prepared 500 × 20 workbook (each row totalled by a
+  `SUM(A:T)` in column U, every second row bold), deletes every third data row, sets column A to
+  `20` on every survivor, and recalculates the row totals. Deleting a row means shifting
+  everything below it *and* rewriting their `SUM` ranges, so this is where the cost of
+  maintaining a cell model shows up. Every library produces the same 335-row result.
 
 ## Report scenario — capability matrix
 
@@ -53,6 +58,18 @@ less work, so read its timing against this table.
 | XLibur | ✅ | ✅ | ✅ | ✅ |
 | IronXL ⧗ | ✅ | ⚠️ font colour only | ✅ | ✅ |
 
+## Edit scenario — capability matrix
+
+| Library | Open + edit in place | Delete row (shift + reference fixup) | Calculation engine |
+| --- | :-: | :-: | :-: |
+| ClosedXML | ✅ | ✅ `IXLRow.Delete()` | ✅ |
+| EPPlus | ✅ | ✅ `DeleteRow()` | ✅ |
+| OpenXML SDK | ⚠️ hand-authored | ⚠️ hand-authored | ❌ sums computed by the benchmark |
+| NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ |
+| MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
+| XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
+| IronXL ⧗ | ✅ | ✅ `RemoveRow()` | ✅ |
+
 ## Caveats
 
 - **Timings are hardware-specific.** The allocation and GC columns are the most portable
@@ -61,7 +78,12 @@ less work, so read its timing against this table.
   only appear in the read-all scenario.
 - MiniExcel has no formula engine; its write total is a pre-computed value rather than a
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
-  report scenario entirely. All other differences are noted inline in the source.
+  report scenario entirely, and it has no cell model to open and mutate, so it sits out the
+  edit scenario too. All other differences are noted inline in the source.
+- The OpenXML SDK has no calculation engine, so in the edit scenario its "recalculation" is a
+  sum the benchmark computes and writes into the cached value itself. It is also the only
+  library there doing a single ordered pass with no model to maintain — read its timing with
+  both facts in mind.
 - **IronXL numbers marked ⧗ are snapshots.** It is commercial and cannot run without a licence
   key, so unless the run that produced a page had one, its rows and chart points are replayed
   from a previously captured run — different hardware, different day. The page names the version
