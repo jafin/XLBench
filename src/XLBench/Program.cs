@@ -32,6 +32,14 @@ if (args is [{ } cmd, ..] && cmd.Equals("report", StringComparison.OrdinalIgnore
     return;
 }
 
+// `dotnet run -- edit` does the same for the edit scenario, and additionally checks each
+// library's recalculated row total against the value computed straight from numbers.csv.
+if (args is [{ } editCmd, ..] && editCmd.Equals("edit", StringComparison.OrdinalIgnoreCase))
+{
+    EditArtifacts.WriteAll();
+    return;
+}
+
 var config = BenchmarkConfig.Create();
 
 // The report benchmarks save their workbook for manual review from [GlobalCleanup], which runs
@@ -270,6 +278,7 @@ namespace XLBench
             ("OpenAndReadAll", "Read · open + read all cells"),
             ("CreateAndSave", "Write · create + save"),
             ("CreateStockReport", "Report · data + conditional formatting + chart"),
+            ("EditAndRecalculate", "Edit · delete rows + set column + recalculate"),
         ];
 
         /// <summary>
