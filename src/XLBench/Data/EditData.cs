@@ -100,6 +100,13 @@ public static class EditData
     /// </summary>
     public static readonly int[] RowsToDelete;
 
+    /// <summary>
+    /// The same rows as <see cref="RowsToDelete"/> in the comma-separated form
+    /// <c>IXLWorksheet.Rows(string)</c> takes, so the libraries offering a whole-set delete can be
+    /// handed the set in one call. Built once at type init, outside any measured region.
+    /// </summary>
+    public static readonly string RowsToDeleteSpec;
+
     /// <summary>Original 0-based CSV row indices that survive the delete, in sheet order.</summary>
     public static readonly int[] SurvivingSourceRows;
 
@@ -157,6 +164,7 @@ public static class EditData
         }
 
         RowsToDelete = [.. toDelete];
+        RowsToDeleteSpec = string.Join(',', toDelete);
         SurvivingSourceRows = [.. surviving];
     }
 
