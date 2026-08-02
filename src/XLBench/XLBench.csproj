@@ -32,7 +32,7 @@
     <PackageReference Include="MiniExcel" Version="1.45.0" />
     <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
-    <PackageReference Include="XLibur.Bundle" Version="0.200.0" />
+    <PackageReference Include="XLibur.Bundle" Version="0.300.0" />
   </ItemGroup>
 
 </Project>
