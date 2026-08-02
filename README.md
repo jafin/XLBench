@@ -15,7 +15,7 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming | [MIT](https://licenses.nuget.org/MIT) |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.200.0 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.300.0 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
