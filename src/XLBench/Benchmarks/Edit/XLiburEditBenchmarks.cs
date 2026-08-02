@@ -8,10 +8,15 @@ namespace XLBench.Benchmarks.Edit;
 /// XLibur edit-and-recalculate: full scenario support.
 ///
 /// The row and cell API is ClosedXML-shaped, so this mirrors
-/// <see cref="ClosedXmlEditBenchmarks"/> line for line — <c>IXLRow.Delete()</c> shifts the rows
-/// below up and rewrites their formula ranges, and <c>RecalculateAllFormulas()</c> drives a real
-/// calculation engine. That makes the two rows in the results table a fairly direct comparison of
-/// two implementations of the same design.
+/// <see cref="ClosedXmlEditBenchmarks"/> line for line — the same <c>IXLRows.Delete()</c> takes
+/// the whole deletion set, and <c>RecalculateAllFormulas()</c> drives a real calculation engine.
+/// That makes the two rows in the results table a fairly direct comparison of two implementations
+/// of the same design.
+///
+/// The implementations differ underneath: from 0.300.0 XLibur collapses the set into one
+/// row-deletion map and re-points every formula against it in a single pass, where ClosedXML
+/// deletes the rows one at a time and pays that pass per row. Handing both the set rather than
+/// looping here is what lets the difference show.
 /// </summary>
 public class XLiburEditBenchmarks
 {
@@ -45,9 +50,7 @@ public class XLiburEditBenchmarks
         using var wb = new XLWorkbook(input);
         var ws = wb.Worksheets.First();
 
-        var toDelete = EditData.RowsToDelete;
-        for (var i = toDelete.Length - 1; i >= 0; i--)
-            ws.Row(toDelete[i]).Delete();
+        ws.Rows(EditData.RowsToDeleteSpec).Delete();
 
         for (var row = EditData.FirstDataRow; row <= EditData.LastRowAfterEdit; row++)
             ws.Cell(row, 1).Value = EditData.ColumnAValue;

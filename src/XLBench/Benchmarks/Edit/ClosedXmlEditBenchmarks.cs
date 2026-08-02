@@ -7,9 +7,10 @@ namespace XLBench.Benchmarks.Edit;
 /// <summary>
 /// ClosedXML edit-and-recalculate: full scenario support through the high-level cell model.
 ///
-/// <c>IXLRow.Delete()</c> shifts the rows below it up and rewrites their formula ranges, so each
-/// row's <c>SUM</c> keeps pointing at its own row without any help. Rows are deleted bottom-up
-/// because every delete renumbers what is beneath it.
+/// Deleting a row shifts the rows below it up and rewrites their formula ranges, so each row's
+/// <c>SUM</c> keeps pointing at its own row without any help. The whole set goes in one
+/// <c>IXLRows.Delete()</c>, which walks it bottom-up internally — each delete renumbers what is
+/// beneath it, so the order matters.
 ///
 /// ClosedXML owns a calculation engine, so <c>RecalculateAllFormulas()</c> is a real evaluation
 /// rather than a flag for Excel to honour when the file is next opened.
@@ -50,9 +51,7 @@ public class ClosedXmlEditBenchmarks
         using var wb = new XLWorkbook(input);
         var ws = wb.Worksheets.First();
 
-        var toDelete = EditData.RowsToDelete;
-        for (var i = toDelete.Length - 1; i >= 0; i--)
-            ws.Row(toDelete[i]).Delete();
+        ws.Rows(EditData.RowsToDeleteSpec).Delete();
 
         for (var row = EditData.FirstDataRow; row <= EditData.LastRowAfterEdit; row++)
             ws.Cell(row, 1).Value = EditData.ColumnAValue;

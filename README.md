@@ -95,7 +95,8 @@ The interesting cost is the delete. Removing a row means shifting every row bene
 rewriting their `SUM` ranges, so a run of non-contiguous deletes is quadratic in every library
 that maintains a cell model — and the constant factor varies by more than an order of magnitude
 between them. It also separates the libraries that own a calculation engine from the one that
-does not.
+does not. Each library is handed the deletion set through the widest API it offers: a whole-set
+call where there is one, a bottom-up loop where there is not.
 
 Every benchmark uses `[MemoryDiagnoser]`, so allocations and Gen0/1/2 collections are
 reported alongside timings. A joined summary adds a **Library** column so libraries line up
@@ -153,12 +154,12 @@ XLibur and IronXL are each asked for one explicitly.
 
 | Library | Open + edit in place | Delete row (shift + reference fixup) | Calculation engine | Artifact valid? |
 | --- | :-: | :-: | :-: | --- |
-| ClosedXML | ✅ | ✅ `IXLRow.Delete()` | ✅ | ✅ |
+| ClosedXML | ✅ | ✅ `IXLRows.Delete()` | ✅ | ✅ |
 | EPPlus | ✅ | ✅ `DeleteRow()` | ✅ | ✅ |
 | OpenXML SDK | ⚠️ manual | ⚠️ manual | ❌ computed by the benchmark | ✅ |
 | NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ | — not benchmarked |
-| XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ | ✅ |
+| XLibur | ✅ | ✅ `IXLRows.Delete()` (batched) | ✅ | ✅ |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ | ✅ |
 
 Unlike the report scenario, every benchmarked library here does the *same* work and produces the
@@ -167,6 +168,15 @@ the bold-row pattern carried up with the shift, and totals that agree to the las
 timings are therefore directly comparable — with the OpenXML SDK the one caveat noted below.
 `dotnet run -- edit` re-checks all of that against the CSV on every pass.
 
+- **ClosedXML and XLibur — same call, different engine.** Both take the whole deletion set as
+  `ws.Rows("4,7,10,…").Delete()`, so the two benchmarks are the same line of code. ClosedXML
+  groups the set by sheet and then deletes bottom-up one row at a time, which is what the
+  benchmark used to spell out by hand; XLibur (since `0.300.0`) collapses the set into a single
+  row-deletion map, re-points every formula against it in one pass, and only then removes the
+  rows run by run with the per-run formula pass switched off. Since the formula pass visits every
+  formula in the workbook, doing it once instead of 166 times is most of the delete cost. It falls
+  back to the per-run path for workbooks holding array, data-table or dynamic-array formulas,
+  whose stored ranges the composite pass does not relocate — this one holds none.
 - **NPOI — no delete-and-close-gap call.** `ISheet.RemoveRow` only empties the slot; closing it
   takes a separate `ShiftRows` over everything below, which is also what rewrites the shifted
   rows' `SUM` ranges. Two calls per deleted row, each touching every row beneath it. That is the
