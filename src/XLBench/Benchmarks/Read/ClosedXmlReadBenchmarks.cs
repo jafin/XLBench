@@ -7,14 +7,31 @@ namespace XLBench.Benchmarks.Read;
 public class ClosedXmlReadBenchmarks
 {
     private byte[] _bytes = null!;
+    private byte[] _propertiesBytes = null!;
 
     [GlobalSetup]
-    public void Setup() => _bytes = TestData.ReadXlsx;
-
-    [Benchmark]
-    public void OpenWorkbook()
+    public void Setup()
     {
-        using var wb = new XLWorkbook(new MemoryStream(_bytes));
+        _bytes = TestData.ReadXlsx;
+        PropertiesData.EnsureLoaded();
+        _propertiesBytes = PropertiesData.SourceXlsx;
+    }
+
+    /// <summary>
+    /// Round trip: open the workbook, set its Title and Category, save it back out. Returns the
+    /// serialized length so the save cannot be optimized away.
+    /// </summary>
+    [Benchmark]
+    public long OpenAmendPropertiesAndSave()
+    {
+        using var wb = new XLWorkbook(new MemoryStream(_propertiesBytes));
+
+        wb.Properties.Title = PropertiesData.Title;
+        wb.Properties.Category = PropertiesData.Category;
+
+        using var output = new MemoryStream();
+        wb.SaveAs(output);
+        return output.Length;
     }
 
     [Benchmark]

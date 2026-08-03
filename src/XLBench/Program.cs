@@ -282,7 +282,7 @@ namespace XLBench
         // Benchmark method name -> human label. Order controls chart order.
         private static readonly (string Key, string Label)[] MethodLabels =
         [
-            ("OpenWorkbook", "Read · open workbook"),
+            ("OpenAmendPropertiesAndSave", "Read · open + set properties + save"),
             ("OpenAndReadAll", "Read · open + read all cells"),
             ("CreateAndSave", "Write · create + save"),
             ("CreateStockReport", "Report · data + conditional formatting + chart"),

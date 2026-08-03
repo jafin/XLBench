@@ -8,14 +8,34 @@ namespace XLBench.Benchmarks.Read;
 public class NpoiReadBenchmarks
 {
     private byte[] _bytes = null!;
+    private byte[] _propertiesBytes = null!;
 
     [GlobalSetup]
-    public void Setup() => _bytes = TestData.ReadXlsx;
-
-    [Benchmark]
-    public void OpenWorkbook()
+    public void Setup()
     {
-        using var wb = new XSSFWorkbook(new MemoryStream(_bytes));
+        _bytes = TestData.ReadXlsx;
+        PropertiesData.EnsureLoaded();
+        _propertiesBytes = PropertiesData.SourceXlsx;
+    }
+
+    /// <inheritdoc cref="ClosedXmlReadBenchmarks.OpenAmendPropertiesAndSave"/>
+    /// <remarks>
+    /// NPOI reaches the document properties through the OOXML package rather than the workbook:
+    /// <c>GetProperties().CoreProperties</c> is the <c>docProps/core.xml</c> part itself, which is
+    /// why Title and Category are set on it directly rather than on <c>XSSFWorkbook</c>.
+    /// </remarks>
+    [Benchmark]
+    public long OpenAmendPropertiesAndSave()
+    {
+        using var wb = new XSSFWorkbook(new MemoryStream(_propertiesBytes));
+
+        var core = wb.GetProperties().CoreProperties;
+        core.Title = PropertiesData.Title;
+        core.Category = PropertiesData.Category;
+
+        using var output = new MemoryStream();
+        wb.Write(output, leaveOpen: true);
+        return output.Length;
     }
 
     [Benchmark]
