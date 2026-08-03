@@ -40,6 +40,14 @@ if (args is [{ } editCmd, ..] && editCmd.Equals("edit", StringComparison.Ordinal
     return;
 }
 
+// `dotnet run -- insert` does the same for the insert scenario. It checks more than the edit
+// command does: every row total in the *saved* file, not just the one cell the benchmark reads.
+if (args is [{ } insertCmd, ..] && insertCmd.Equals("insert", StringComparison.OrdinalIgnoreCase))
+{
+    InsertArtifacts.WriteAll();
+    return;
+}
+
 var config = BenchmarkConfig.Create();
 
 // The report benchmarks save their workbook for manual review from [GlobalCleanup], which runs
@@ -279,6 +287,7 @@ namespace XLBench
             ("CreateAndSave", "Write · create + save"),
             ("CreateStockReport", "Report · data + conditional formatting + chart"),
             ("EditAndRecalculate", "Edit · delete rows + set column + recalculate"),
+            ("InsertColumnsAndRecalculate", "Edit · insert 2 columns + recalculate"),
         ];
 
         /// <summary>

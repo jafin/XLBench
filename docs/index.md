@@ -42,6 +42,11 @@ that one goes to the product page.
   `20` on every survivor, and recalculates the row totals. Deleting a row means shifting
   everything below it *and* rewriting their `SUM` ranges, so this is where the cost of
   maintaining a cell model shows up. Every library produces the same 335-row result.
+- **Insert** — `InsertColumnsAndRecalculate` opens that same prepared workbook, deletes nothing,
+  inserts 2 columns before column B, writes `10` into both on all 500 data rows, and recalculates.
+  The new columns land *inside* the totalled range, so every `SUM(A:T)` has to come back as
+  `SUM(A:V)` and take them in. Where the edit scenario re-points every formula 166 times, this is
+  one structural edit with a single workbook-wide reference fixup — read the two together.
 
 ## Report scenario — capability matrix
 
@@ -70,6 +75,21 @@ less work, so read its timing against this table.
 | XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ |
 
+## Insert scenario — capability matrix
+
+| Library | Open + edit in place | Insert columns (shift + reference fixup) | Calculation engine |
+| --- | :-: | :-: | :-: |
+| ClosedXML | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ |
+| EPPlus | ✅ | ✅ `InsertColumn(from, count)` | ✅ |
+| OpenXML SDK | ⚠️ hand-authored | ⚠️ hand-authored | ❌ sums computed by the benchmark |
+| NPOI | ✅ | ✅ `XSSFSheet.ShiftColumns()` | ✅ |
+| MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
+| XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ |
+| IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ |
+
+All 500 row totals in every saved artifact are checked against the source CSV on each
+`dotnet run -- insert`, read out of the package XML rather than through a library.
+
 ## Caveats
 
 - **Timings are hardware-specific.** The allocation and GC columns are the most portable
@@ -79,11 +99,15 @@ less work, so read its timing against this table.
 - MiniExcel has no formula engine; its write total is a pre-computed value rather than a
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
   report scenario entirely, and it has no cell model to open and mutate, so it sits out the
-  edit scenario too. All other differences are noted inline in the source.
-- The OpenXML SDK has no calculation engine, so in the edit scenario its "recalculation" is a
-  sum the benchmark computes and writes into the cached value itself. It is also the only
-  library there doing a single ordered pass with no model to maintain — read its timing with
-  both facts in mind.
+  edit and insert scenarios too. All other differences are noted inline in the source.
+- The OpenXML SDK has no calculation engine, so in the edit and insert scenarios its
+  "recalculation" is a sum the benchmark computes and writes into the cached value itself. It is
+  also the only library there doing a single ordered pass with no model to maintain — read its
+  timing with both facts in mind.
+- ClosedXML is the only library that does not persist what it recalculated: a plain `SaveAs`
+  writes each formula cell with no cached value, leaving the totals to Excel on open. That
+  affects the saved artifacts, not the timings — the insert scenario's artifact save opts into
+  `evaluateFormulae: true` so its file carries the numbers like the others do.
 - **IronXL is licence-gated.** It is commercial and cannot run without a key, so a run that
   lacks one replays its rows and chart points from a previously captured run instead — marked
   ⧗, and named with the version and capture date it came from. The current results carry no

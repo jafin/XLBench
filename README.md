@@ -98,6 +98,26 @@ between them. It also separates the libraries that own a calculation engine from
 does not. Each library is handed the deletion set through the widest API it offers: a whole-set
 call where there is one, a bottom-up loop where there is not.
 
+**Insert** (`InsertColumnsAndRecalculate` — the same workbook, widened instead of shortened):
+
+- *Init, not measured.* The **same source workbook** as the edit scenario, byte for byte, so the
+  two are directly comparable and only the operation differs.
+- *Measured.* Open the workbook, **insert 2 columns before column B**, write `10` into both of
+  them on all 500 data rows, then **recalculate**. Nothing is deleted and no existing value is
+  overwritten, so every row total must come back as its original total plus `20`.
+- The columns go *inside* the totalled range, not at its edge, and that is the whole point:
+  `SUM(A2:T2)` has to come back as `SUM(A2:V2)` and pick the new columns up. Inserting at column
+  A would shift the range rather than widen it, which tests nothing.
+- Saving is *not* measured, for the same reason as the edit scenario.
+
+Where the delete makes each library re-point every formula 166 times, this is one structural edit
+whose reference fixup runs across the workbook exactly once — so read the two together: the edit
+scenario is dominated by per-formula cost repeated, this one by the cost of a single pass plus the
+1,000 cells written into it. `dotnet run -- insert` checks it harder than the edit scenario checks
+itself: not just the one cell the benchmark reads back, but **all 500 row totals in the saved
+file**, read straight out of the package XML with no library in the way (see
+[Reviewable output](#reviewable-output)).
+
 Every benchmark uses `[MemoryDiagnoser]`, so allocations and Gen0/1/2 collections are
 reported alongside timings. A joined summary adds a **Library** column so libraries line up
 per scenario.
@@ -199,6 +219,52 @@ timings are therefore directly comparable — with the OpenXML SDK the one cavea
   bringing the whole scenario down to a couple of minutes. The row count is a single constant —
   `EditData.MaxRows` — so a deeper run is a one-line change.
 
+### Insert scenario — capability matrix
+
+| Library | Open + edit in place | Insert columns (shift + reference fixup) | Calculation engine | Totals persisted on save |
+| --- | :-: | :-: | :-: | :-: |
+| ClosedXML | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ | ⚠️ opt-in |
+| EPPlus | ✅ | ✅ `InsertColumn(from, count)` | ✅ | ✅ |
+| OpenXML SDK | ⚠️ manual | ⚠️ manual | ❌ computed by the benchmark | ✅ |
+| NPOI | ✅ | ✅ `XSSFSheet.ShiftColumns()` | ✅ | ✅ |
+| MiniExcel | ❌ | ❌ | ❌ | — not benchmarked |
+| XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ | ✅ |
+| IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ | ✅ |
+
+All six libraries do the *same* work here and produce the same 501-row × 23-column sheet: `B` and
+`C` = 10 on every data row, every `SUM(A{r}:T{r})` widened to `SUM(A{r}:V{r})`, and totals that
+agree to the last ulp. `dotnet run -- insert` re-checks all 500 of them against the CSV on every
+pass, reading the saved file rather than asking the library that wrote it.
+
+- **The last column is the point of the fourth column above.** A benchmark that recalculates in
+  memory and saves a file with no cached values has done the arithmetic but not shipped it: the
+  numbers only exist once Excel opens the workbook and computes them again. Four libraries write
+  their totals into the file as a matter of course. ClosedXML does not — a plain `SaveAs` emits
+  each formula cell as `<f>` with no `<v>` — so the artifact save opts in with
+  `evaluateFormulae: true`. That is outside the measured region and changes no timing; without it
+  the check reports 500 cells with no usable cached value, which is how the difference was found.
+  The same is true of ClosedXML's *edit* artifact, which this repo has never checked.
+- **NPOI — an insert spelled as a shift.** There is no "insert n columns here"; the equivalent is
+  `XSSFSheet.ShiftColumns`, moving the block that has to make way. It is a real structural call
+  and not a workaround — internally it builds a `FormulaShifter` for the column move and re-points
+  formulas, named ranges, conditional formatting and hyperlinks against it — but it lives on the
+  concrete `XSSFSheet` rather than on `ISheet`, where its row counterpart `ShiftRows` sits. Note
+  the contrast with the same library's row delete, which has no bulk call at all: here one call
+  covers the whole edit.
+- **OpenXML SDK — everything by hand, and no recalculation at all.** There is no `InsertColumn`.
+  Every cell from column B rightwards has its `CellReference` rewritten two columns along, the two
+  new cells are spliced into the gap *in column order* — `sheetData` is an ordered element list,
+  so appending them would produce a file Excel rejects — and each row's `SUM` range is widened
+  explicitly. As in the edit scenario there is no calculation engine, so the benchmark adds each
+  row up itself, writes the result into the cached `<v>`, drops the now-stale `calcChain` (whose
+  entries still point at the old column) and sets `fullCalcOnLoad`.
+- **Styling of the inserted columns is library-defined and deliberately not equalized.** Some
+  libraries carry a neighbouring column's style onto the new ones, the hand-written OpenXML path
+  leaves them unstyled, so the bold-row pattern may or may not extend across B and C. Forcing
+  agreement would mean adding per-library styling code to a measured region to paper over a real
+  difference in what each library's insert does.
+- **MiniExcel — excluded**, for the same reason as the edit scenario.
+
 ### IronXL — licence-gated and snapshotted
 
 IronXL is implemented for all three scenarios, but only measures when `XLBENCH_IRONXL_KEY` holds
@@ -283,20 +349,31 @@ and both `conditionalFormatting` blocks carry the correct `sqref` and relative f
 
 ### Reviewable output
 
-The report and edit benchmarks keep their workbooks. Each run writes
-`output/stock-report-<library>.xlsx` and `output/numbers-edited-<library>.xlsx` (git-ignored,
-overwritten on the next run) so the results can be opened and eyeballed:
+The report, edit and insert benchmarks keep their workbooks. Each run writes
+`output/stock-report-<library>.xlsx`, `output/numbers-edited-<library>.xlsx` and
+`output/numbers-inserted-<library>.xlsx` (git-ignored, overwritten on the next run) so the results
+can be opened and eyeballed:
 
 ```pwsh
 # Just write the artifacts — same code path, no measurement (seconds, not minutes).
 dotnet run -c Release --project src/XLBench -- report
 dotnet run -c Release --project src/XLBench -- edit
+dotnet run -c Release --project src/XLBench -- insert
 ```
 
 `-- edit` additionally verifies each library's recalculated row total against the value computed
 straight from `numbers.csv` and prints `OK` or `MISMATCH` per library, so the scenario's
 correctness can be checked without a measured run. The elapsed time it prints is one cold pass —
 indicative only, never a benchmark result.
+
+`-- insert` goes further, and deliberately: the benchmark reads one cell back, which is enough to
+stop the work being optimized away but not enough to call the result correct. So it re-opens each
+saved artifact and checks **every** row — all 500 totals against the CSV, and every `SUM` range
+against the widened form it should have taken. It reads them straight out of the package XML
+(`Data/SavedSheet.cs`) rather than through a library, because checking a library's output by
+re-opening it with a library risks the reader evaluating the formula and reporting the answer the
+check wanted rather than the one stored in the file. What it prints per library is
+`500/500 saved row totals verified`, or the first few cells that disagree with the reason.
 
 Saving happens in `[GlobalCleanup]`, once per library and outside every measured iteration, by
 re-running the build against a `FileStream` — so file I/O never lands in the timings. If a
@@ -308,9 +385,9 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   only appear in `OpenAndReadAll`.
 - MiniExcel has no formula engine; its write total is a pre-computed value, not a `SUM()`.
 - MiniExcel cannot open and mutate a workbook in place, so it does not appear in
-  `EditAndRecalculate`.
-- The shared read file, and the edit scenario's source workbook, are generated once with
-  ClosedXML purely as a neutral OOXML producer, outside any measured region.
+  `EditAndRecalculate` or `InsertColumnsAndRecalculate`.
+- The shared read file, and the source workbook the edit and insert scenarios share, are generated
+  once with ClosedXML purely as a neutral OOXML producer, outside any measured region.
 - Read timings and allocations both scale linearly with the sheet, which is 50,000 × 15
   (750,000 cells). That size is deliberate: it is well past the point where the fixed cost of
   opening the package matters, and still heavy enough to push the eager-model libraries into
@@ -319,7 +396,11 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   `TestData.ReadRowCount` is one constant if you want a deeper run.
 - Edit timings are comparable across all six libraries — they produce identical sheets — with
   the OpenXML SDK the one caveat: it has no calculation engine, so its "recalculation" is a sum
-  the benchmark computes and writes into the cached value itself.
+  the benchmark computes and writes into the cached value itself. The same caveat, and the same
+  comparability, applies to the insert scenario.
+- The insert scenario's artifact save is the one place a library gets a flag the others do not:
+  ClosedXML saves with `evaluateFormulae: true` so the file carries its totals, which the other
+  libraries do without being asked. It is outside the measured region and affects no timing.
 - The report scenario's JSON is parsed once into a shared week × symbol matrix, also outside
   any measured region — the deserialization is identical for every library and would only add
   the same constant to each result.
@@ -439,13 +520,14 @@ full run lives in `.github/workflows/benchmark.yml`.
 
 1. Add the NuGet `PackageReference` to `src/XLBench/XLBench.csproj`.
 2. Add `Read/<Name>ReadBenchmarks.cs`, `Write/<Name>WriteBenchmarks.cs` and (where the library
-   can express them) `Report/<Name>ReportBenchmarks.cs` and `Edit/<Name>EditBenchmarks.cs`,
-   mirroring an existing set. Method names must match — `OpenWorkbook` / `OpenAndReadAll` /
-   `CreateAndSave` / `CreateStockReport` / `EditAndRecalculate` — so the joined summary aligns.
+   can express them) `Report/<Name>ReportBenchmarks.cs`, `Edit/<Name>EditBenchmarks.cs` and
+   `Insert/<Name>InsertBenchmarks.cs`, mirroring an existing set. Method names must match —
+   `OpenWorkbook` / `OpenAndReadAll` / `CreateAndSave` / `CreateStockReport` /
+   `EditAndRecalculate` / `InsertColumnsAndRecalculate` — so the joined summary aligns.
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
-4. For a report or edit benchmark, register it in `Data/ReportArtifacts.cs` or
-   `Data/EditArtifacts.cs` so `dotnet run -- report` / `-- edit` writes its workbook, and add a
-   row to the matching capability matrix above.
+4. For a report, edit or insert benchmark, register it in `Data/ReportArtifacts.cs`,
+   `Data/EditArtifacts.cs` or `Data/InsertArtifacts.cs` so `dotnet run -- report` / `-- edit` /
+   `-- insert` writes its workbook, and add a row to the matching capability matrix above.
 5. If the library needs credentials to run at all, add it to `SnapshotLibraries` in
    `Program.cs` and gate it in `BenchmarkConfig` the way IronXL is, so runs without those
    credentials replay `snapshots/<library>.json` instead of failing.
@@ -489,6 +571,8 @@ src/XLBench/
   Data/TestData.cs               # shared deterministic dataset (seed 42)
   Data/StockData.cs              # report-scenario dataset (embedded stock_data.json)
   Data/EditData.cs               # edit-scenario dataset + source workbook (embedded numbers.csv)
+  Data/InsertData.cs             # insert-scenario layout over the same source workbook
+  Data/SavedSheet.cs             # reads a saved .xlsx's cells from the package XML, no library
   Data/LibrarySnapshot.cs        # persisted results for licence-gated libraries
   Libraries/EpPlusLicense.cs     # EPPlus non-commercial license declaration
   Libraries/IronXlLicense.cs     # IronXL commercial key (opt-in via XLBENCH_IRONXL_KEY)
@@ -496,6 +580,7 @@ src/XLBench/
   Benchmarks/Write/*             # one class per library
   Benchmarks/Report/*            # one class per library that can express the scenario
   Benchmarks/Edit/*              # one class per library that can express the scenario
+  Benchmarks/Insert/*            # one class per library that can express the scenario
 docs/                            # GitHub Pages content (index.md + generated results.md)
 snapshots/                       # committed results for libraries that need a licence key
 scripts/run-benchmarks.ps1        # run the suite and publish docs/
