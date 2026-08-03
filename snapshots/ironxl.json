@@ -1,77 +1,77 @@
 {
   "library": "IronXL",
   "methods": {
-    "OpenWorkbook": {
-      "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
-      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
-      "job": "Job-HTCPYF",
-      "timeMs": 2572.0563444444447,
-      "allocMb": 3717.7638626098633,
-      "errorMs": 214.239319574357,
-      "stdDevMs": 127.49038271277674,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenWorkbook                | 2,572.056 ms | 214.2393 ms | 127.4904 ms | 235000.0000 |  67000.0000 |  7000.0000 | 3717.76 MB |"
-    },
     "CreateStockReport": {
       "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
       "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
       "job": "Job-HTCPYF",
-      "timeMs": 400.98544,
-      "allocMb": 238.1335220336914,
-      "errorMs": 55.455679194848734,
-      "stdDevMs": 36.680498198519,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlReportBenchmarks    | CreateStockReport           |   400.985 ms |  55.4557 ms |  36.6805 ms |  14000.0000 |   3000.0000 |          - |  238.13 MB |"
+      "timeMs": 387.84854,
+      "allocMb": 237.38035583496094,
+      "errorMs": 36.54559157286721,
+      "stdDevMs": 24.17264607187223,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlReportBenchmarks    | CreateStockReport           |   387.849 ms |  36.5456 ms |  24.1726 ms |   384.092 ms |  14000.0000 |   3000.0000 |          - |  237.38 MB |"
     },
     "CreateAndSave": {
       "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
       "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
       "job": "Job-HTCPYF",
-      "timeMs": 946.68355,
-      "allocMb": 797.6271591186523,
-      "errorMs": 7.85356019475421,
-      "stdDevMs": 1.2153471314813722,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlWriteBenchmarks     | CreateAndSave               |   946.684 ms |   7.8536 ms |   1.2153 ms |  48000.0000 |  16000.0000 |  3000.0000 |  797.63 MB |"
+      "timeMs": 943.1373,
+      "allocMb": 797.6267013549805,
+      "errorMs": 18.519073183015617,
+      "stdDevMs": 11.020403408110793,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlWriteBenchmarks     | CreateAndSave               |   943.137 ms |  18.5191 ms |  11.0204 ms |   938.999 ms |  48000.0000 |  16000.0000 |  3000.0000 |  797.63 MB |"
     },
     "OpenAndReadAll": {
       "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
       "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
       "job": "Job-HTCPYF",
-      "timeMs": 8138.63691,
-      "allocMb": 6333.033630371094,
-      "errorMs": 390.9972082361875,
-      "stdDevMs": 258.6204443000611,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenAndReadAll              | 8,138.637 ms | 390.9972 ms | 258.6204 ms | 393000.0000 | 202000.0000 | 10000.0000 | 6333.03 MB |"
+      "timeMs": 9318.10692,
+      "allocMb": 6333.035736083984,
+      "errorMs": 477.33359192316436,
+      "stdDevMs": 315.7266165131853,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenAndReadAll              | 9,318.107 ms | 477.3336 ms | 315.7266 ms | 9,377.407 ms | 393000.0000 | 202000.0000 | 10000.0000 | 6333.04 MB |"
     },
     "EditAndRecalculate": {
       "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
       "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
       "job": "Job-HTCPYF",
-      "timeMs": 1639.7329111111112,
-      "allocMb": 753.8628692626953,
-      "errorMs": 52.26335910753107,
-      "stdDevMs": 31.101086708604104,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlEditBenchmarks      | EditAndRecalculate          | 1,639.733 ms |  52.2634 ms |  31.1011 ms |  57000.0000 |  36000.0000 | 15000.0000 |  753.86 MB |"
+      "timeMs": 1577.27329,
+      "allocMb": 753.8590850830078,
+      "errorMs": 62.95832824292966,
+      "stdDevMs": 41.64303601047706,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlEditBenchmarks      | EditAndRecalculate          | 1,577.273 ms |  62.9583 ms |  41.6430 ms | 1,583.098 ms |  57000.0000 |  36000.0000 | 15000.0000 |  753.86 MB |"
+    },
+    "OpenAmendPropertiesAndSave": {
+      "version": "2026.8.1",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
+      "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
+      "job": "Job-HTCPYF",
+      "timeMs": 208.7463,
+      "allocMb": 152.81492614746094,
+      "errorMs": 155.75696081232553,
+      "stdDevMs": 92.68846906158285,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlReadBenchmarks      | OpenAmendPropertiesAndSave  |   208.746 ms | 155.7570 ms |  92.6885 ms |   168.705 ms |   9000.0000 |   2000.0000 |          - |  152.81 MB |"
     },
     "InsertColumnsAndRecalculate": {
       "version": "2026.8.1",
-      "capturedUtc": "2026-08-03T08:18:41.9027929Z",
+      "capturedUtc": "2026-08-03T10:07:01.7122637Z",
       "host": "Windows 11 (10.0.22631.6199/23H2/2023Update/SunValley3), AMD Ryzen 9 5950X 16-Core Processor",
       "job": "Job-HTCPYF",
-      "timeMs": 101.56283125,
-      "allocMb": 104.88105773925781,
-      "errorMs": 6.124881256293275,
-      "stdDevMs": 3.203431328941058,
-      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Gen0        | Gen1        | Gen2       | Allocated  |",
-      "tableRow": "| IronXL      | IronXlInsertBenchmarks    | InsertColumnsAndRecalculate |   101.563 ms |   6.1249 ms |   3.2034 ms |   6500.0000 |   1500.0000 |   500.0000 |  104.88 MB |"
+      "timeMs": 113.2840375,
+      "allocMb": 104.88123321533203,
+      "errorMs": 41.97497523723687,
+      "stdDevMs": 27.76384720061937,
+      "tableHeader": "| Library     | Type                      | Method                      | Mean         | Error       | StdDev      | Median       | Gen0        | Gen1        | Gen2       | Allocated  |",
+      "tableRow": "| IronXL      | IronXlInsertBenchmarks    | InsertColumnsAndRecalculate |   113.284 ms |  41.9750 ms |  27.7638 ms |    97.052 ms |   7000.0000 |   2500.0000 |   750.0000 |  104.88 MB |"
     }
   }
 }

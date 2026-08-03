@@ -48,7 +48,13 @@ depending on any of them.
 
 **Read** (50,000 × 15 sheet — every library reads the *same* `.xlsx` bytes):
 
-- `OpenWorkbook` — load the workbook into memory (eager-model libraries only).
+- `OpenAmendPropertiesAndSave` — a metadata round trip on its own, much smaller workbook: open,
+  set the document `Title` and `Category`, save back to a stream. Eager-model libraries only.
+  It runs over a purpose-built 1,000 × 8 numeric sheet (`PropertiesData`) rather than the 50,000 ×
+  15 read file, because the point is the round trip and the metadata write, not throughput — at
+  750,000 cells serialization would cost hundreds of milliseconds and bury the part being
+  measured. The result read back is the serialized length, so the save cannot be optimized away.
+  (This replaces the former `OpenWorkbook`, which measured the load in isolation.)
 - `OpenAndReadAll` — open, then read every populated cell as a string using each library's
   idiomatic iteration (e.g. ClosedXML/XLibur `CellsUsed()`, EPPlus `Cells`, NPOI row
   enumeration, OpenXML/MiniExcel streaming). Random `Cell(row,col)` indexer access is
@@ -386,8 +392,20 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - MiniExcel has no formula engine; its write total is a pre-computed value, not a `SUM()`.
 - MiniExcel cannot open and mutate a workbook in place, so it does not appear in
   `EditAndRecalculate` or `InsertColumnsAndRecalculate`.
-- The shared read file, and the source workbook the edit and insert scenarios share, are generated
-  once with ClosedXML purely as a neutral OOXML producer, outside any measured region.
+- The shared read file, the source workbook the edit and insert scenarios share, and the
+  properties round trip's 1,000 × 8 sheet are generated once with ClosedXML purely as a neutral
+  OOXML producer, outside any measured region.
+- All five libraries in `OpenAmendPropertiesAndSave` do the same work and all five persist both
+  properties, but they do not agree on *where*. ClosedXML, XLibur, NPOI and IronXL write the OPC
+  core-properties part the package relationship already pointed at —
+  `package/services/metadata/core-properties/{guid}.psmdcp`, which is what any
+  `System.IO.Packaging`-based writer produces. EPPlus instead writes the conventional
+  `docProps/core.xml` **and leaves the inherited relationship in place**, so its output carries
+  two `metadata/core-properties` relationships where OPC permits at most one. Both parts exist,
+  only one holds the title and category, and which a consumer honours is undefined — Excel reads
+  it fine, a strict relationship-following reader gets the stale part. That is a property of
+  EPPlus round-tripping a package it did not create, not of the benchmark: a workbook Excel
+  authored has no `.psmdcp` for EPPlus to leave behind.
 - Read timings and allocations both scale linearly with the sheet, which is 50,000 × 15
   (750,000 cells). That size is deliberate: it is well past the point where the fixed cost of
   opening the package matters, and still heavy enough to push the eager-model libraries into
@@ -522,7 +540,7 @@ full run lives in `.github/workflows/benchmark.yml`.
 2. Add `Read/<Name>ReadBenchmarks.cs`, `Write/<Name>WriteBenchmarks.cs` and (where the library
    can express them) `Report/<Name>ReportBenchmarks.cs`, `Edit/<Name>EditBenchmarks.cs` and
    `Insert/<Name>InsertBenchmarks.cs`, mirroring an existing set. Method names must match —
-   `OpenWorkbook` / `OpenAndReadAll` / `CreateAndSave` / `CreateStockReport` /
+   `OpenAmendPropertiesAndSave` / `OpenAndReadAll` / `CreateAndSave` / `CreateStockReport` /
    `EditAndRecalculate` / `InsertColumnsAndRecalculate` — so the joined summary aligns.
 3. Add a case to `LibraryNameColumn` in `src/XLBench/Config/LibraryComparisonConfig.cs`.
 4. For a report, edit or insert benchmark, register it in `Data/ReportArtifacts.cs`,

@@ -29,8 +29,11 @@ that one goes to the product page.
 
 ## Scenarios
 
-- **Read** — `OpenWorkbook` (load into memory) and `OpenAndReadAll` (open + read every cell)
-  over a 50,000 × 15 sheet. Every library reads the exact same `.xlsx` bytes.
+- **Read** — `OpenAndReadAll` (open + read every cell) over a 50,000 × 15 sheet; every library
+  reads the exact same `.xlsx` bytes. Alongside it, `OpenAmendPropertiesAndSave` is a metadata
+  round trip on a smaller purpose-built 1,000 × 8 numeric sheet: open, set the document `Title`
+  and `Category`, save back out. It uses the smaller workbook on purpose — at 750,000 cells the
+  serialization would bury the part being measured.
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
 - **Report** — `CreateStockReport` imports 20 tickers × 260 weekly closing prices from JSON
@@ -96,6 +99,12 @@ All 500 row totals in every saved artifact are checked against the source CSV on
   signal when comparing across machines.
 - OpenXML SDK and MiniExcel are streaming APIs with no eager "load workbook" step, so they
   only appear in the read-all scenario.
+- All five libraries in the properties round trip persist both properties, but not to the same
+  place. Four write the OPC core-properties part the package already pointed at (`.psmdcp`);
+  EPPlus writes the conventional `docProps/core.xml` and leaves the inherited relationship
+  behind, so its output declares two core-properties relationships where OPC allows one. Excel
+  reads it; a strict relationship-following reader gets the part without the title. See the
+  [README](https://github.com/jafin/XLBench#fairness-notes).
 - MiniExcel has no formula engine; its write total is a pre-computed value rather than a
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
   report scenario entirely, and it has no cell model to open and mutate, so it sits out the
