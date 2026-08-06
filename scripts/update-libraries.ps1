@@ -214,6 +214,15 @@ if (-not $Apply) {
 
 # --- Apply --------------------------------------------------------------------------------
 
+# The version list above came from a direct flat container request, but `dotnet add package`
+# resolves through NuGet's HTTP cache, which can still be serving an index that predates a
+# freshly published version. When that happens the restore fails with NU1102 and then, having
+# no package to inspect, reports the misleading "incompatible with 'all' frameworks". Clearing
+# the cache once here keeps the apply path reading the same nuget.org the report path did.
+Write-Host 'Clearing the NuGet HTTP cache so the restore sees the same versions this report did.' -ForegroundColor DarkGray
+dotnet nuget locals http-cache --clear | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Failed to clear the NuGet HTTP cache.' }
+
 Push-Location $repoRoot
 try {
     foreach ($row in $outdated) {
