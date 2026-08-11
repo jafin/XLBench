@@ -1,3 +1,14 @@
 title: XLBench
-description: Performance and memory benchmarks for .NET Excel libraries
+description: Compare .NET Excel libraries with reproducible BenchmarkDotNet tests for reading, writing, editing and memory usage. Benchmarks include ClosedXML, EPPlus, NPOI, OpenXML SDK, MiniExcel, XLibur and IronXL.
 theme: jekyll-theme-cayman
+
+plugins:
+  - jekyll-sitemap
+
+# jekyll-sitemap lists every static .html file too. Keep the Search Console
+# verification file out of the sitemap; it is not a page.
+defaults:
+  - scope:
+      path: google356e52583bd67043.html
+    values:
+      sitemap: false
