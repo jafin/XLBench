@@ -2,7 +2,12 @@
 title: XLBench
 ---
 
-# XLBench — .NET Excel Library Benchmarks
+# .NET Excel Library Performance Benchmarks
+
+<p>
+Independent performance and memory benchmarks comparing
+ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur and IronXL.
+</p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
 libraries, all consumed via NuGet and run on **.NET 10** with
