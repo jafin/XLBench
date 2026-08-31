@@ -58,10 +58,10 @@
 param(
     [string]$Filter = '*',
     [string]$Job = '',
-    [int]$MinWarmupCount = 1,
-    [int]$MaxWarmupCount = 3,
+    [int]$MinWarmupCount = 3,
+    [int]$MaxWarmupCount = 10,
     [int]$MinIterationCount = 5,
-    [int]$MaxIterationCount = 10,
+    [int]$MaxIterationCount = 15,
     [switch]$FullFidelity
 )
 

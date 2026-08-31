@@ -11,11 +11,11 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | Library | NuGet package | Version | Notes | License |
 | --- | --- | --- | --- | --- |
 | [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 | High-level cell model | [MIT](https://licenses.nuget.org/MIT) |
-| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.6.3 | Requires a license declaration (non-commercial, set in code) | [Polyform Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) ᴬ |
+| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.7.0 | Requires a license declaration (non-commercial, set in code) | [Polyform Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) ᴬ |
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming | [MIT](https://licenses.nuget.org/MIT) |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ |
-| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.45.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.310.0 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
+| [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.311.2-alpha.34 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
 
 Library links point at each project's source repository, except IronXL, which is closed source —
@@ -435,9 +435,9 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - IronXL's report timing covers the full scenario, but its conditional-format fill never reaches
   the file (see above). It still pays for building the rule, so the timing stays comparable —
   the artifact is what differs.
-- Every library now runs on its latest stable release. XLibur was previously pinned to a
-  prerelease because stable `0.106.0` could not produce a valid chart for the report scenario;
-  `0.200.0` can, so that pin is gone and its read and write numbers come from stable too.
+- Every library runs on its latest release. Six of the seven are on their latest stable;
+  XLibur tracks its prerelease channel (currently `0.311.2-alpha.34`), because that is where
+  the library is actively developed and where the report-scenario chart support first landed.
 
 ## Best-effort implementations
 
