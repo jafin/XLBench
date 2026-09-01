@@ -38,7 +38,7 @@ choosing a library for commercial work:
   use it in revenue-generating activity with annual gross revenue at or above US$10,000, and
   those below are exempt. Accepting it is what `<AcceptNPOIOSMFLicense>` in the project file
   does. Building from source under Apache-2.0 alone avoids the agreement entirely.
-- **ᶜ Telerik — commercial, and quiet about it.** Telerik Document Processing is sold as part of
+- **ᶜ Telerik — commercial.** Telerik Document Processing is sold as part of
   a Telerik/Kendo subscription; there is no free tier, only a 30-day trial. What makes it
   different from IronXL is the failure mode: build without a licence key and it compiles, runs,
   and produces workbooks — each one carrying an extra worksheet named `License` with a
