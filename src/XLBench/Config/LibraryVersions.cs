@@ -23,6 +23,11 @@ public static class LibraryVersions
             ("XLibur", VersionOf(typeof(XLibur.Excel.XLWorkbook))),
         ];
 
+        // Telerik, like IronXL, is only "under test" when it is licensed — unlicensed it
+        // watermarks every export and its benchmarks are filtered out of the run.
+        if (Libraries.TelerikLicense.IsLicensed)
+            libraries.Add(("Telerik", VersionOf(typeof(Telerik.Documents.Spreadsheet.Model.Workbook))));
+
         // IronXL is referenced but only runs with a licence key; listing it as "under test"
         // when its benchmarks were filtered out would misreport the published results.
         if (Libraries.IronXlLicense.KeyAvailable)

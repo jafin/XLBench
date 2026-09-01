@@ -20,16 +20,23 @@
     measurements settle — these only move the floor and ceiling, so a stable benchmark
     finishes at the minimum and only a noisy one runs to the maximum.
 
-    The defaults here (warmup 1-3, iterations 5-10) are deliberately below BenchmarkDotNet's
-    own (warmup 6-50, iterations 15-100), which cuts a full run roughly in half. Every
-    scenario in this suite runs 25 ms to 20 s per operation, so the default floors cost
-    minutes per benchmark for accuracy this comparison does not need: the libraries differ
-    by 2-10x, far outside any plausible confidence interval.
+    The defaults here (warmup 3-10, iterations 5-15) sit below BenchmarkDotNet's own
+    (warmup 6-50, iterations 15-100), which keeps a full run to roughly ten minutes. The
+    libraries differ by 2-10x, far outside any plausible confidence interval, so the stock
+    floors would cost minutes per benchmark for accuracy this comparison does not need.
 
-    The trade is a wider Error column - measured at 2-3x wider on the edit scenario, with
-    means within ~5% of a full-fidelity run and the ranking unchanged. That is fine for
-    comparing libraries and NOT fine for detecting a few-percent regression between versions
-    of one library. Use -FullFidelity for that.
+    The ceilings matter more than the floors. Because both stages stop early once they
+    settle, a low minimum costs nothing - but a low maximum caps a benchmark that has NOT
+    settled, so it reports an unconverged mean with a very wide Error. The previous
+    defaults (warmup 1-3, iterations 5-10) did exactly that: ten rows came back with Error
+    above 9% of Mean, seven of them biased high by 14-46%, which put two library rankings
+    in the wrong order. At the current values those seven converge to <= 4.6% and agree
+    within 1-2% with separate 20-30 iteration runs, for +22% wall clock.
+
+    Read the Error column as the convergence check: any row much above ~5% of its Mean has
+    not settled and should be re-run with a higher -MaxIterationCount before it is trusted
+    or published. Detecting a few-percent regression between versions of one library still
+    wants -FullFidelity.
 
     Note that BenchmarkDotNet validates Max > Min and fails the run otherwise, so lowering a
     maximum below the stock minimum (6 / 15) means lowering the minimum too.
@@ -58,10 +65,10 @@
 param(
     [string]$Filter = '*',
     [string]$Job = '',
-    [int]$MinWarmupCount = 1,
-    [int]$MaxWarmupCount = 3,
+    [int]$MinWarmupCount = 3,
+    [int]$MaxWarmupCount = 10,
     [int]$MinIterationCount = 5,
-    [int]$MaxIterationCount = 10,
+    [int]$MaxIterationCount = 15,
     [switch]$FullFidelity
 )
 

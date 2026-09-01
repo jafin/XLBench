@@ -47,6 +47,7 @@ public static class EditArtifacts
             ("NPOI", NpoiEditBenchmarks.WriteArtifact),
             ("OpenXML SDK", OpenXmlEditBenchmarks.WriteArtifact),
             ("XLibur", XLiburEditBenchmarks.WriteArtifact),
+            ("Telerik", TelerikEditBenchmarks.WriteArtifact),
             ("IronXL", IronXlEditBenchmarks.WriteArtifact),
         ];
 
@@ -56,6 +57,13 @@ public static class EditArtifacts
         {
             writers = [.. writers.Where(w => w.Library != "IronXL")];
             Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
+        }
+
+        // Telerik watermarks its output when unlicensed (see TelerikLicense).
+        if (!TelerikLicense.IsLicensed)
+        {
+            writers = [.. writers.Where(w => w.Library != "Telerik")];
+            Console.WriteLine("[XLBench] Skipping Telerik — no licence found (see README).");
         }
 
         var written = 0;
