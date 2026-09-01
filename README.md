@@ -17,15 +17,16 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.311.2-alpha.34 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
+| [Telerik](https://www.telerik.com/document-processing-libraries) (RadSpreadProcessing) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) + [`.FormatProviders.OpenXml`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet.FormatProviders.OpenXml) | 2026.3.826 | **Commercial.** Free to evaluate, but unlicensed it watermarks every workbook rather than failing — see [Telerik](#telerik--licence-gated-and-it-does-not-fail-loudly) | [Proprietary EULA](https://www.telerik.com/purchase/license-agreement/document-processing-libraries) ᶜ |
 
-Library links point at each project's source repository, except IronXL, which is closed source —
-that one goes to the product page. Versions are the pinned NuGet package versions (see
+Library links point at each project's source repository, except IronXL and Telerik, which are
+closed source — those go to their product pages. Versions are the pinned NuGet package versions (see
 `src/XLBench/XLBench.csproj`); the generated `docs/results.md` reports the exact resolved
 versions from each run via reflection.
 
 Licenses are as declared by each pinned package (`<license>` in its `.nuspec`, or the license
 file it ships), not as reported by any third-party index. Four are plain permissive terms; the
-other three are not, and the distinction matters more than the benchmark numbers if you are
+other four are not, and the distinction matters more than the benchmark numbers if you are
 choosing a library for commercial work:
 
 - **ᴬ EPPlus — noncommercial by default.** From 5.0 the free terms are Polyform Noncommercial,
@@ -37,6 +38,12 @@ choosing a library for commercial work:
   use it in revenue-generating activity with annual gross revenue at or above US$10,000, and
   those below are exempt. Accepting it is what `<AcceptNPOIOSMFLicense>` in the project file
   does. Building from source under Apache-2.0 alone avoids the agreement entirely.
+- **ᶜ Telerik — commercial, and quiet about it.** Telerik Document Processing is sold as part of
+  a Telerik/Kendo subscription; there is no free tier, only a 30-day trial. What makes it
+  different from IronXL is the failure mode: build without a licence key and it compiles, runs,
+  and produces workbooks — each one carrying an extra worksheet named `License` with a
+  "License validation couldn't run" notice. Nothing throws. See
+  [Telerik](#telerik--licence-gated-and-it-does-not-fail-loudly).
 - **IronXL** is proprietary throughout — there is no free tier, only a trial. See
   [IronXL](#ironxl--licence-gated-and-snapshotted).
 
@@ -142,9 +149,10 @@ that skips a feature is doing strictly less work.
 | MiniExcel | ✅ | ❌ | ❌ | ❌ | — not benchmarked |
 | XLibur | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
 | IronXL | ✅ | ⚠️ font only | ✅ | ✅ | ⚠️ 1 schema error |
+| Telerik | ✅ | ✅ | ✅ | ✅ | ✅ schema-clean |
 
-All five charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK,
-XLibur and IronXL are each asked for one explicitly.
+All six charts carry a legend on the right. EPPlus adds one by default; NPOI, the OpenXML SDK,
+XLibur, IronXL and Telerik are each asked for one explicitly.
 
 - **ClosedXML — no charts.** 0.105.0 ships internal `XLChart`/`XLCharts` types, but nothing
   exposes them: `IXLWorksheet` has no `Charts` member, so there is no public API to add one.
@@ -175,6 +183,17 @@ XLibur and IronXL are each asked for one explicitly.
   pin: stable `0.106.0` wrote every series name as a `<c:strRef>` with no required `<c:f>` —
   20 schema errors, one per series — and had no legend API at all. Both fixes have since
   shipped in stable, so the repo tracks the stable channel again from `0.200.0`.)
+- **Telerik — the least chart code here, once the categories are unpicked.**
+  `ChartCollection.Add` takes an anchor cell, one data range and a chart type, and infers the
+  series and their names from the range, so there is nothing to bind per symbol. The catch is
+  the category axis: handed `B1:V261` it reads the week-ending column as a twenty-first series
+  rather than as the categories. The benchmark therefore builds the chart from the price block
+  alone and assigns `LineSeries.Categories` afterwards — still far less code than the loop the
+  other four write, and it produces the same 20-series chart.
+- **Telerik — sized in pixels, not cells.** A `FloatingChartShape` anchors to one cell and takes
+  an explicit width and height, where the other libraries give a second cell anchor. The
+  benchmark converts the shared 14-column × 30-row span using Excel's default column width and
+  row height, so the chart occupies roughly the same area rather than exactly the same cells.
 
 ### Edit scenario — capability matrix
 
@@ -187,6 +206,7 @@ XLibur and IronXL are each asked for one explicitly.
 | MiniExcel | ❌ | ❌ | ❌ | — not benchmarked |
 | XLibur | ✅ | ✅ `IXLRows.Delete()` (batched) | ✅ | ✅ |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ | ✅ |
+| Telerik | ✅ | ✅ `RowSelection.Remove()` (batched) | ✅ | ✅ |
 
 Unlike the report scenario, every benchmarked library here does the *same* work and produces the
 same 335-row sheet: `A` = 20 on every data row, every `SUM(A{r}:T{r})` renumbered to its new row,
@@ -203,6 +223,15 @@ timings are therefore directly comparable — with the OpenXML SDK the one cavea
   formula in the workbook, doing it once instead of 166 times is most of the delete cost. It falls
   back to the per-run path for workbooks holding array, data-table or dynamic-array formulas,
   whose stored ranges the composite pass does not relocate — this one holds none.
+- **Telerik — correct, batched, and by a wide margin the slowest.** `Rows[…]` accepts a set of
+  ranges as well as a single one, so all 166 scattered rows go in one `RowSelection.Remove()`
+  and the totals come out right to the last ulp. It is the cost that stands out: roughly 200 ms
+  per deleted row, tens of gigabytes allocated for the scenario, where the next slowest library
+  is two orders of magnitude cheaper. Undo recording is part of it — every `Workbook` records
+  each edit into `WorkbookHistory` by default so a host editor can undo it, and turning that off
+  (`workbook.History.IsEnabled = false`, which every Telerik benchmark here does; see
+  `Libraries/TelerikWorkbooks.cs`) takes about two thirds off. The rest is the model itself.
+  Suspending layout update was measured alongside it and changed nothing.
 - **NPOI — no delete-and-close-gap call.** `ISheet.RemoveRow` only empties the slot; closing it
   takes a separate `ShiftRows` over everything below, which is also what rewrites the shifted
   rows' `SUM` ranges. Two calls per deleted row, each touching every row beneath it. That is the
@@ -236,8 +265,9 @@ timings are therefore directly comparable — with the OpenXML SDK the one cavea
 | MiniExcel | ❌ | ❌ | ❌ | — not benchmarked |
 | XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ | ✅ |
 | IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ | ✅ |
+| Telerik | ✅ | ✅ `ColumnSelection.Insert()` | ✅ | ✅ |
 
-All six libraries do the *same* work here and produce the same 501-row × 23-column sheet: `B` and
+All seven libraries do the *same* work here and produce the same 501-row × 23-column sheet: `B` and
 `C` = 10 on every data row, every `SUM(A{r}:T{r})` widened to `SUM(A{r}:V{r})`, and totals that
 agree to the last ulp. `dotnet run -- insert` re-checks all 500 of them against the CSV on every
 pass, reading the saved file rather than asking the library that wrote it.
@@ -353,6 +383,63 @@ and both `conditionalFormatting` blocks carry the correct `sqref` and relative f
   `IronSoftware.System.Drawing` for licensing and telemetry. `IronXlLicense.Ensure()` calls
   `License.DisableAppAnalytics()` so the phone-home cannot fold network latency into timings.
 
+### Telerik — licence-gated, and it does not fail loudly
+
+RadSpreadProcessing (Telerik Document Processing) is implemented for all five scenarios. It is
+commercial and free to *evaluate*, and the evaluation path is where it differs from every other
+library here — including the other commercial one.
+
+**Unlicensed, nothing throws.** `Telerik.Documents.Spreadsheet` builds, restores and runs with no
+licence at all. What changes is the output: every workbook it exports gains an extra worksheet
+named `License` carrying a "License validation couldn't run" notice, and the workbook opens with
+that sheet active. No exception, no build error, no console warning at runtime — a benchmark run
+would simply be measuring a library writing one more sheet than its competitors, and the
+artifacts would quietly carry a banner.
+
+That is why the benchmarks are gated rather than left to run. `Libraries/TelerikLicense.cs`
+exports a one-cell workbook once at startup, re-imports it, and looks for that sheet;
+`BenchmarkConfig` filters every `Telerik*` benchmark out when it finds one, the same way IronXL's
+are dropped without `XLBENCH_IRONXL_KEY`. CI has no key, so Telerik does not appear in
+`docs/results-ci.md`.
+
+**The licence is resolved at build time, not run time.** Telerik's MSBuild task looks for a key in
+`TELERIK_LICENSE`, `TELERIK_LICENSE_PATH`, a `telerik-license.txt` beside the project or any
+ancestor directory, and finally `%AppData%\Telerik	elerik-license.txt`; what it finds is
+embedded into the compiled assembly. There is no supported runtime "am I licensed" call, which is
+why the check above is a probe rather than an API call — and why changing the key means
+rebuilding, not just re-running.
+
+Note also that the licensing task **phones home at build time**, reporting the products
+referenced and a workstation id. `TelerikLicensingVerbosity` controls how much of that it logs
+(`obj/<config>/<tfm>/telerik-licensing.log` has the detail), but the build-time call itself is not
+something a project property here turns off.
+
+**Snapshots.** Unlike IronXL, Telerik is *not* snapshotted into `snapshots/`. A licensed run
+measures it and an unlicensed run simply omits it. Wiring it into `LibrarySnapshot` the way
+IronXL is would be a small change to `Program.cs` (`SnapshotLibraries`) if its numbers should
+survive keyless runs.
+
+#### API notes
+
+- **Everything is 0-based.** Rows, columns and `CellIndex` all count from zero, where the rest of
+  this suite is 1-based. Every index in the Telerik benchmarks is one lower than the equivalent
+  ClosedXML or EPPlus line for that reason, not by accident.
+- **No document `Category`.** `Workbook.DocumentInfo` exposes Author, Description, Keywords,
+  Subject and Title — and that is all. The properties round trip therefore writes one of the two
+  properties the scenario asks for where the other five libraries write both. See the fairness
+  notes.
+- **Reading and writing files is not the workbook's job.** `Workbook` has no `Save`/`Load`; an
+  `XlsxFormatProvider` imports a stream into the model and exports the model back out, and the
+  format providers ship in separate packages from the model. That is why two `PackageReference`s
+  are needed for what is one library.
+- **No "enumerate the populated cells" call.** There is no `CellsUsed()`, no row iterator, no
+  sparse enumeration. Telerik's own documentation walks `Worksheet.UsedCellRange` by index, so
+  that is what `OpenAndReadAll` does. Unlike the libraries this suite deliberately avoids indexer
+  access for, here it is the idiomatic path.
+- **Formula results sit behind a second cell value.** `GetValue()` hands back the formula;
+  `FormulaCellValue.GetResultValueAsCellValue()` hands back what it evaluated to.
+- **Undo recording is on by default and it is expensive.** See the edit scenario notes above.
+
 ### Reviewable output
 
 The report, edit and insert benchmarks keep their workbooks. Each run writes
@@ -395,8 +482,11 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - The shared read file, the source workbook the edit and insert scenarios share, and the
   properties round trip's 1,000 × 8 sheet are generated once with ClosedXML purely as a neutral
   OOXML producer, outside any measured region.
-- All five libraries in `OpenAmendPropertiesAndSave` do the same work and all five persist both
-  properties, but they do not agree on *where*. ClosedXML, XLibur, NPOI and IronXL write the OPC
+- Telerik is the exception to the paragraph below: `Workbook.DocumentInfo` has no `Category`, so
+  its properties round trip writes the Title and stops. In a round trip dominated by import and
+  export that is a small difference, but it is one property fewer than everyone else writes.
+- The other five libraries in `OpenAmendPropertiesAndSave` do the same work and all five persist
+  both properties, but they do not agree on *where*. ClosedXML, XLibur, NPOI and IronXL write the OPC
   core-properties part the package relationship already pointed at —
   `package/services/metadata/core-properties/{guid}.psmdcp`, which is what any
   `System.IO.Packaging`-based writer produces. EPPlus instead writes the conventional
@@ -412,7 +502,7 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   multi-gigabyte allocation — which is the finding the allocation column is there to carry. A
   smaller sheet keeps the ranking but flattens that into per-cell overhead.
   `TestData.ReadRowCount` is one constant if you want a deeper run.
-- Edit timings are comparable across all six libraries — they produce identical sheets — with
+- Edit timings are comparable across all seven libraries — they produce identical sheets — with
   the OpenXML SDK the one caveat: it has no calculation engine, so its "recalculation" is a sum
   the benchmark computes and writes into the cached value itself. The same caveat, and the same
   comparability, applies to the insert scenario.
@@ -426,8 +516,8 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   chart, and the OpenXML SDK estimates its column width instead of measuring text, so each
   does less work than a full run of the scenario.
 - Auto-fit widths legitimately differ between libraries, because each measures text with its own
-  font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, NPOI 11.16,
-  IronXL 12.6, and the OpenXML SDK's character-count estimate 11.71. A like-for-like width was
+  font engine and padding rule: ClosedXML 12.71, XLibur 13.00, EPPlus 14.53, Telerik 11.87,
+  NPOI 11.16, IronXL 12.6, and the OpenXML SDK's character-count estimate 11.71. A like-for-like width was
   not forced — the point is what each library does when simply asked to fit the column.
 - IronXL's numbers are **snapshots**, not fresh measurements, unless the run that produced the
   page had a licence key. They are marked ⧗ wherever they appear and carry the version and date
@@ -435,7 +525,9 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - IronXL's report timing covers the full scenario, but its conditional-format fill never reaches
   the file (see above). It still pays for building the rule, so the timing stays comparable —
   the artifact is what differs.
-- Every library runs on its latest release. Six of the seven are on their latest stable;
+- Telerik's numbers, like IronXL's, only exist when the run was licensed — but where IronXL
+  replays a snapshot, Telerik is simply absent from a keyless run's tables and charts.
+- Every library runs on its latest release. Seven of the eight are on their latest stable;
   XLibur tracks its prerelease channel (currently `0.311.2-alpha.34`), because that is where
   the library is actively developed and where the report-scenario chart support first landed.
 
@@ -594,6 +686,8 @@ src/XLBench/
   Data/LibrarySnapshot.cs        # persisted results for licence-gated libraries
   Libraries/EpPlusLicense.cs     # EPPlus non-commercial license declaration
   Libraries/IronXlLicense.cs     # IronXL commercial key (opt-in via XLBENCH_IRONXL_KEY)
+  Libraries/TelerikLicense.cs    # Telerik licence probe (unlicensed exports carry a watermark)
+  Libraries/TelerikWorkbooks.cs  # shared Telerik setup (undo recording off)
   Benchmarks/Read/*              # one class per library
   Benchmarks/Write/*             # one class per library
   Benchmarks/Report/*            # one class per library that can express the scenario

@@ -41,6 +41,17 @@ public static class BenchmarkConfig
                 !c.Descriptor.Type.Name.StartsWith("IronXl", StringComparison.Ordinal)));
         }
 
+        // RadSpreadProcessing degrades instead of throwing: unlicensed, every workbook it writes
+        // gains an extra "License" worksheet. That is different work from what the other
+        // libraries do and it would go unnoticed in the table, so drop it — see TelerikLicense.
+        if (!TelerikLicense.IsLicensed)
+        {
+            Console.WriteLine(
+                "[XLBench] No Telerik licence found — excluding Telerik benchmarks (see README).");
+            config.AddFilter(new SimpleFilter(c =>
+                !c.Descriptor.Type.Name.StartsWith("Telerik", StringComparison.Ordinal)));
+        }
+
         return config;
     }
 }
@@ -57,6 +68,7 @@ public static class LibraryNames
         var n when n.StartsWith("MiniExcel") => "MiniExcel",
         var n when n.StartsWith("XLibur") => "XLibur",
         var n when n.StartsWith("IronXl") => "IronXL",
+        var n when n.StartsWith("Telerik") => "Telerik",
         _ => typeName,
     };
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Checks nuget.org for newer versions of the packages referenced by src/XLBench, and
@@ -57,6 +57,10 @@ $librariesUnderTest = @(
     'MiniExcel'
     'XLibur.Bundle'
     'IronXL.Excel'
+    # Two packages, one library: the RadSpreadProcessing model and its .xlsx format provider.
+    # They are versioned in lockstep and must be bumped together.
+    'Telerik.Documents.Spreadsheet'
+    'Telerik.Documents.Spreadsheet.FormatProviders.OpenXml'
 )
 
 # --- NuGet version comparison -------------------------------------------------------------

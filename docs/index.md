@@ -6,7 +6,7 @@ title: XLBench
 
 <p>
 Independent performance and memory benchmarks comparing
-ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur and IronXL.
+ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur, IronXL and Telerik.
 </p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
@@ -28,9 +28,15 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.311.2-alpha.34 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 |
+| [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.826 |
 
-Library links point at each project's source repository, except IronXL, which is closed source —
-that one goes to the product page.
+Library links point at each project's source repository, except IronXL and Telerik, which are
+closed source — those go to their product pages.
+
+IronXL and Telerik are commercial. IronXL needs a licence key to run at all and is otherwise
+replayed from a committed snapshot (marked ⧗); Telerik runs unlicensed but watermarks every
+workbook it writes, so it is excluded from keyless runs — including the CI page — rather than
+measured. See the [README](https://github.com/jafin/XLBench#libraries-under-test).
 
 ## Scenarios
 
@@ -70,6 +76,7 @@ less work, so read its timing against this table.
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
 | IronXL | ✅ | ⚠️ font colour only | ✅ | ✅ |
+| Telerik | ✅ | ✅ | ✅ | ✅ |
 
 ## Edit scenario — capability matrix
 
@@ -82,6 +89,7 @@ less work, so read its timing against this table.
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ |
+| Telerik | ✅ | ✅ `RowSelection.Remove()` | ✅ |
 
 ## Insert scenario — capability matrix
 
@@ -94,6 +102,7 @@ less work, so read its timing against this table.
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ |
 | IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ |
+| Telerik | ✅ | ✅ `ColumnSelection.Insert()` | ✅ |
 
 All 500 row totals in every saved artifact are checked against the source CSV on each
 `dotnet run -- insert`, read out of the package XML rather than through a library.
@@ -104,8 +113,10 @@ All 500 row totals in every saved artifact are checked against the source CSV on
   signal when comparing across machines.
 - OpenXML SDK and MiniExcel are streaming APIs with no eager "load workbook" step, so they
   only appear in the read-all scenario.
-- All five libraries in the properties round trip persist both properties, but not to the same
-  place. Four write the OPC core-properties part the package already pointed at (`.psmdcp`);
+- Telerik's `Workbook.DocumentInfo` has no `Category`, so its properties round trip writes the
+  Title only — one property fewer than the other five.
+- The other five libraries in the properties round trip persist both properties, but not to the
+  same place. Four write the OPC core-properties part the package already pointed at (`.psmdcp`);
   EPPlus writes the conventional `docProps/core.xml` and leaves the inherited relationship
   behind, so its output declares two core-properties relationships where OPC allows one. Excel
   reads it; a strict relationship-following reader gets the part without the title. See the
