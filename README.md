@@ -525,6 +525,16 @@ workbook is still open in Excel the save is skipped with a warning rather than f
 - IronXL's report timing covers the full scenario, but its conditional-format fill never reaches
   the file (see above). It still pays for building the rule, so the timing stays comparable —
   the artifact is what differs.
+- **Telerik's `CreateStockReport` row carries a wide `Error` (~11% of its Mean) and that is not
+  an unconverged measurement.** Its StdDev is ~16% of the Mean and stays there as iterations
+  rise: the scenario allocates ~430 MB per operation and takes two gen2 collections with it, so
+  whether a given iteration is interrupted by one dominates the timing. Reaching the ~5% Error
+  this repo treats as converged would need ~127 iterations at the 99.9% interval, past
+  BenchmarkDotNet's own ceiling of 100 — raising `-MaxIterationCount` from 15 to 30 moved it from
+  15.7% to 11.2% and the mean from 174 ms to 158 ms, which is the shape of inherent dispersion
+  rather than of a mean still settling. It is published as measured because the dispersion does
+  not touch the ranking: the row is ~5x the next slowest library in that scenario, far outside
+  the interval. Read the number as "around 160 ms, ±25", not as a precise figure.
 - Telerik's numbers, like IronXL's, only exist when the run was licensed — but where IronXL
   replays a snapshot, Telerik is simply absent from a keyless run's tables and charts.
 - Every library runs on its latest release. Seven of the eight are on their latest stable;

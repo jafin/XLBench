@@ -125,6 +125,10 @@ All 500 row totals in every saved artifact are checked against the source CSV on
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
   report scenario entirely, and it has no cell model to open and mutate, so it sits out the
   edit and insert scenarios too. All other differences are noted inline in the source.
+- Telerik's report row has a wide error bar by nature, not by undersampling: the scenario
+  allocates ~430 MB per operation and two gen2 collections come with it, so iteration times
+  scatter by ~16% however long the run. It is still roughly 5x the next slowest library there,
+  so the ranking holds — read it as "around 160 ms, ±25".
 - The OpenXML SDK has no calculation engine, so in the edit and insert scenarios its
   "recalculation" is a sum the benchmark computes and writes into the cached value itself. It is
   also the only library there doing a single ordered pass with no model to maintain — read its
