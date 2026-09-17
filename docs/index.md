@@ -1,5 +1,6 @@
 ---
 title: XLBench
+logo: /xlbench-logo.png
 ---
 
 # .NET Excel Library Performance Benchmarks

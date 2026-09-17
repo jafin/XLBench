@@ -1,0 +1,8 @@
+# Gems for previewing docs/ locally with scripts/serve-docs.ps1.
+# The github-pages gem pins Jekyll, the Cayman theme and jekyll-sitemap to the
+# versions GitHub Pages builds with, so the local preview matches the live site.
+# Kept outside docs/ so it has no effect on the GitHub Pages build.
+source "https://rubygems.org"
+
+gem "github-pages", group: :jekyll_plugins
+gem "webrick" # Ruby 3 no longer bundles the server `jekyll serve` needs
