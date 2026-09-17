@@ -15,8 +15,8 @@ are published as GitHub-flavored markdown to **GitHub Pages**.
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 | Low-level SAX streaming | [MIT](https://licenses.nuget.org/MIT) |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.0 | Java POI port | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 | Streaming, POCO/dynamic oriented | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.311.2-alpha.34 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
-| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.8.1 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.610.0 | Bundles the SkiaSharp font engine (auto-registers) | [MIT](https://licenses.nuget.org/MIT) |
+| [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.9.2 | **Commercial.** Runs only with a licence key; otherwise its results are replayed from `snapshots/` — see [IronXL](#ironxl--licence-gated-and-snapshotted) | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/) |
 | [Telerik](https://www.telerik.com/document-processing-libraries) (RadSpreadProcessing) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) + [`.FormatProviders.OpenXml`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet.FormatProviders.OpenXml) | 2026.3.826 | **Commercial.** Free to evaluate, but unlicensed it watermarks every workbook rather than failing — see [Telerik](#telerik--licence-gated-and-it-does-not-fail-loudly) | [Proprietary EULA](https://www.telerik.com/purchase/license-agreement/document-processing-libraries) ᶜ |
 
 Library links point at each project's source repository, except IronXL and Telerik, which are
@@ -537,9 +537,7 @@ workbook is still open in Excel the save is skipped with a warning rather than f
   the interval. Read the number as "around 160 ms, ±25", not as a precise figure.
 - Telerik's numbers, like IronXL's, only exist when the run was licensed — but where IronXL
   replays a snapshot, Telerik is simply absent from a keyless run's tables and charts.
-- Every library runs on its latest release. Seven of the eight are on their latest stable;
-  XLibur tracks its prerelease channel (currently `0.311.2-alpha.34`), because that is where
-  the library is actively developed and where the report-scenario chart support first landed.
+- Every library runs on its latest stable release.
 
 ## Best-effort implementations
 
