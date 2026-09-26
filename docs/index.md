@@ -139,6 +139,9 @@ All 500 row totals in every saved artifact are checked against the source CSV on
 - Sylvan reads a formula cell as the result saved in the file. It has no calculation engine, so
   a formula with no saved result reads as `Null`, and the formula text itself is not available.
   See the [README](https://github.com/jafin/XLBench#sylvan-1).
+- Sylvan cannot write formulas. Its writer only writes values: numbers, dates, booleans and
+  text. A string such as `=A2+B2` is saved as literal text, not as a formula. The write
+  benchmark therefore stores a pre-computed total instead of `SUM()`, as MiniExcel does.
 - Telerik's report row has a wide error bar by nature, not by undersampling: the scenario
   allocates ~430 MB per operation and two gen2 collections come with it, so iteration times
   scatter by ~16% however long the run. It is still roughly 5x the next slowest library there,
