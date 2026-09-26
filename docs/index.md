@@ -120,12 +120,13 @@ All 500 row totals in every saved artifact are checked against the source CSV on
 
 - **Timings are hardware-specific.** The allocation and GC columns are the most portable
   signal when comparing across machines.
-- OpenXML SDK, MiniExcel and Sylvan are streaming APIs with no eager "load workbook" step, so
-  they only appear in the read-all scenario.
+- MiniExcel and Sylvan cannot edit an existing workbook, so they are not in the properties round
+  trip. The OpenXML SDK is: it edits the package's core properties directly and never parses the
+  worksheets, which is less work than loading the whole workbook as the others do.
 - Telerik's `Workbook.DocumentInfo` has no `Category`, so its properties round trip writes the
-  Title only — one property fewer than the other five.
-- The other five libraries in the properties round trip persist both properties, but not to the
-  same place. Four write the OPC core-properties part the package already pointed at (`.psmdcp`);
+  Title only — one property fewer than the other seven.
+- The other seven libraries in the properties round trip persist both properties, but not to the
+  same place. Six write the OPC core-properties part the package already pointed at (`.psmdcp`);
   EPPlus writes the conventional `docProps/core.xml` and leaves the inherited relationship
   behind, so its output declares two core-properties relationships where OPC allows one. Excel
   reads it; a strict relationship-following reader gets the part without the title. See the
