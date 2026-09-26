@@ -323,6 +323,15 @@ MiniExcel is a streaming reader/writer. It has no editable workbook model or for
 
 Sylvan.Data.Excel is also a streaming reader/writer with no editable workbook model or calculation engine, so it cannot run this scenario either.
 
+Sylvan can read formula cells, but only the results that were saved in the file:
+
+* If the file contains saved results, Sylvan returns them as normal values. Excel, EPPlus and most other libraries save these results.
+* If the file has no saved results, every formula cell returns `Null`. For example, ClosedXML does not save results by default. Sylvan cannot calculate the values.
+* A saved error, such as `#DIV/0!`, causes `GetString` to throw `ExcelFormulaException`. Use `GetFormulaError`, or set the `GetErrorAsNull` or `FormulaErrorHandling` option.
+* The formula text, for example `SUM(A2:T2)`, is not available.
+
+It cannot read back the totals of this scenario either, because the totals must be recalculated after the edit.
+
 ### Why only 500 rows?
 
 Row deletion is roughly quadratic for several libraries.
