@@ -47,6 +47,7 @@ public static class EditArtifacts
             ("NPOI", NpoiEditBenchmarks.WriteArtifact),
             ("OpenXML SDK", OpenXmlEditBenchmarks.WriteArtifact),
             ("XLibur", XLiburEditBenchmarks.WriteArtifact),
+            ("OfficeIMO", OfficeImoEditBenchmarks.WriteArtifact),
             ("Telerik", TelerikEditBenchmarks.WriteArtifact),
             ("IronXL", IronXlEditBenchmarks.WriteArtifact),
         ];

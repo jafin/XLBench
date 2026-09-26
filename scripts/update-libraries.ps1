@@ -56,6 +56,7 @@ $librariesUnderTest = @(
     'NPOI'
     'MiniExcel'
     'XLibur.Bundle'
+    'OfficeIMO.Excel'
     'IronXL.Excel'
     # Two packages, one library: the RadSpreadProcessing model and its .xlsx format provider.
     # They are versioned in lockstep and must be bumped together.

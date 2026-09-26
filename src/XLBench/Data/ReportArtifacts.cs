@@ -27,6 +27,7 @@ public static class ReportArtifacts
             ("NPOI", NpoiReportBenchmarks.WriteArtifact),
             ("OpenXML SDK", OpenXmlReportBenchmarks.WriteArtifact),
             ("XLibur", XLiburReportBenchmarks.WriteArtifact),
+            ("OfficeIMO", OfficeImoReportBenchmarks.WriteArtifact),
             ("Telerik", TelerikReportBenchmarks.WriteArtifact),
             ("IronXL", IronXlReportBenchmarks.WriteArtifact),
         ];
