@@ -30,6 +30,7 @@
     --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
     --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
     --s9:#8a5a2b; --s10:#5f7f99;
+    --op1:#2a78d6; --op2:#eb6834; --op3:#1baf7a; --op4:#eda100; --op5:#e87ba4; --op6:#4a3aa7;
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
@@ -40,6 +41,7 @@
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
     --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
     --s9:#b8865a; --s10:#8fa9bf;
+    --op1:#3987e5; --op2:#d95926; --op3:#199e70; --op4:#c98500; --op5:#d55181; --op6:#9085e9;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -51,6 +53,7 @@
       --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
       --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
       --s9:#b8865a; --s10:#8fa9bf;
+      --op1:#3987e5; --op2:#d95926; --op3:#199e70; --op4:#c98500; --op5:#d55181; --op6:#9085e9;
     }
   }
   *{box-sizing:border-box}
@@ -144,6 +147,24 @@
   #heatView td.heat .hbar{position:absolute; left:0; bottom:0; height:3px; border-radius:0 2px 0 0;}
   #heatView td.ratio{color:var(--muted); font-size:12px; text-align:right; font-variant-numeric:tabular-nums; padding-left:2px;}
 
+  /* relative-time dot plot: one row per library, one mark per operation */
+  #dotSection{margin-top:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 16px 14px;}
+  #dotSection h2{font-size:15px; font-weight:600; margin:0; letter-spacing:-0.01em;}
+  #dotSection .dot-head{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px;}
+  #dotSection .sub{font-size:13px; margin:4px 0 12px;}
+  #dotSection .legend{margin:0 0 8px; gap:6px 16px;}
+  #dotSection .legend svg{flex:none; overflow:visible;}
+  #dotPlot{position:relative; width:100%;}
+  #dotPlot svg{display:block; width:100%; overflow:visible;}
+  #dotPlot text{font-family:inherit;}
+  #dotPlot .dp-row:hover .dp-bg{fill:var(--track);}
+  #dotSection details{margin-top:10px; font-size:13px;}
+  #dotSection summary{cursor:pointer; color:var(--text-secondary); font-size:12.5px;}
+  #dotSection details table{margin-top:10px;}
+  #dotSection details .wrapx{overflow-x:auto;}
+  #tip .tt-line .tt-k{display:inline-flex; align-items:center; gap:6px;}
+  #tip .tt-line .tt-k svg{flex:none; overflow:visible;}
+
   #empty{display:none; padding:48px 8px; color:var(--muted); font-size:14px;}
   #empty code{background:var(--track); padding:2px 6px; border-radius:5px;}
 </style>
@@ -176,6 +197,21 @@
   <div id="tableView"></div>
   <div id="heatView"></div>
   <p class="note" id="footnote"></p>
+
+  <section id="dotSection" style="display:none" aria-labelledby="dotTitle">
+    <div class="dot-head">
+      <h2 id="dotTitle"></h2>
+      <div class="seg" role="group" aria-label="Overall chart measure">
+        <button id="dTime" aria-pressed="true">Speed</button>
+        <button id="dMem" aria-pressed="false">Memory</button>
+      </div>
+    </div>
+    <p class="sub" id="dotSub"></p>
+    <div class="legend" id="dotLegend"></div>
+    <div id="dotPlot"></div>
+    <p class="note" id="dotNote"></p>
+    <details><summary>Show as a table</summary><div class="wrapx" id="dotTable"></div></details>
+  </section>
 
   <div id="empty">No results yet. Run <code>scripts/run-benchmarks.ps1</code> to generate <code>results-data.js</code>.</div>
 </div>
@@ -425,6 +461,198 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       </table>`;
   }
 
+  // ---- relative dot plot (speed or memory) ----
+  // One row per library, one mark per operation. Each value (mean time, or allocated MB) is
+  // divided by the best completed value for its operation (best = 1×) and plotted on a log axis.
+  // Rows are ranked by the geometric mean of those ratios — never by averaging raw values, which
+  // would let the heaviest operation dominate. A library missing any operation is not ranked: a
+  // geometric mean over a subset skips exactly the work it could not do, so it is not comparable.
+  // Such rows sit below the ranking, ordered by their partial mean and labelled with how many
+  // they completed.
+  const SHAPES = [
+    'M0,-5A5,5 0 1,1 0,5A5,5 0 1,1 0,-5Z',          // circle
+    'M-4.5,-4.5H4.5V4.5H-4.5Z',                    // square
+    'M0,-6L5.4,3.6H-5.4Z',                         // triangle up
+    'M0,-6.2L6.2,0L0,6.2L-6.2,0Z',                 // diamond
+    'M0,6L5.4,-3.6H-5.4Z',                         // triangle down
+    'M-1.9,-6H1.9V-1.9H6V1.9H1.9V6H-1.9V1.9H-6V-1.9H-1.9Z' // plus
+  ];
+  const fmtRatio = r => r < 1.005 ? '1×'
+                      : r < 10 ? r.toFixed(r < 1.95 ? 2 : 1)+'×'
+                      : Math.round(r).toLocaleString()+'×';
+  const fmtExact = unit => v => v.toLocaleString(undefined,{maximumFractionDigits: v<10?2 : v<100?1 : 0})+' '+unit;
+  const fmtMsExact = fmtExact('ms');
+
+  const DOT_MEASURES = {
+    time: { field:'time', fmt:fmtMsExact, best:'fastest', axis:'Relative time (× fastest)',
+            title:'Overall speed: time relative to the fastest, per operation',
+            sub:'Each row is one library; each mark is one operation’s mean time divided by the fastest time any library completed for that operation (fastest = 1×). <b>Lower is faster.</b> Rows are ranked by the geometric mean of the ratios. Hover a row for exact times.',
+            source:'mean times in the data (milliseconds)' },
+    mem:  { field:'mem', fmt:fmtExact('MB'), best:'leanest', axis:'Relative memory (× leanest)',
+            title:'Overall memory: allocations relative to the leanest, per operation',
+            sub:'Each row is one library; each mark is one operation’s allocated memory divided by the least any library allocated for that operation (leanest = 1×). <b>Lower is leaner.</b> Rows are ranked by the geometric mean of the ratios. Hover a row for exact figures.',
+            source:'allocated megabytes in the data' }
+  };
+
+  // Colour and shape belong to the operation's position in OPS, so they never change when the
+  // measure does (an operation with no data for one measure just drops out of that view).
+  const OP_STYLE = Object.fromEntries(OPS.map((op,i)=>[op.key, { color:`var(--op${(i%6)+1})`, shape:SHAPES[i%SHAPES.length] }]));
+
+  function dotModel(m){
+    const f = DOT_MEASURES[m].field;
+    const ops = OPS.map(op=>{
+      const vs = DATA.filter(d=>d.op===op.key && nOK(d[f]) && d[f]>0).map(d=>d[f]);
+      return { ...op, ...OP_STYLE[op.key], best: vs.length ? Math.min(...vs) : null };
+    }).filter(op=>op.best!=null);
+    const rows = LIBS.map(lib=>{
+      const pts = ops.map(op=>{
+        const d = DATA.find(x=>x.lib===lib && x.op===op.key);
+        return d && nOK(d[f]) && d[f]>0 ? { op, v:d[f], ratio:d[f]/op.best } : { op, v:null, ratio:null };
+      });
+      const done = pts.filter(p=>p.ratio!=null);
+      const gm = done.length ? Math.exp(done.reduce((s,p)=>s+Math.log(p.ratio),0)/done.length) : null;
+      return { lib, pts, done:done.length, gm, complete: done.length===ops.length };
+    }).filter(r=>r.done>0);
+    const ranked = rows.filter(r=>r.complete).sort((a,b)=>a.gm-b.gm);
+    ranked.forEach((r,i)=> r.rank = i+1);
+    const partial = rows.filter(r=>!r.complete).sort((a,b)=>b.done-a.done || a.gm-b.gm);
+    return { m, ...DOT_MEASURES[m], ops, ranked, partial };
+  }
+  const DOT_MODELS = { time: dotModel('time'), mem: dotModel('mem') };
+  let dotMeasure = DOT_MODELS.time.ops.length ? 'time' : 'mem';
+  const dm = () => DOT_MODELS[dotMeasure];
+  const shapeSvg = (op, size=14) =>
+    `<svg width="${size}" height="${size}" viewBox="-7 -7 14 14" aria-hidden="true"><path d="${op.shape}" style="fill:${op.color}"/></svg>`;
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function buildDotText(){
+    const M = dm(), n = M.ops.length;
+    document.getElementById('dotTitle').textContent = M.title;
+    document.getElementById('dotSub').innerHTML = M.sub;
+    document.getElementById('dotLegend').innerHTML = M.ops.map(op=>
+      `<span>${shapeSvg(op)}${op.tag?op.tag+' · ':''}${op.title}</span>`).join('');
+    document.getElementById('dotNote').innerHTML =
+      `Ratios are computed from the ${M.source}, not from rounded figures. `
+      + (M.m==='mem' ? 'Memory is total managed bytes allocated over the run, not peak working set. ' : '')
+      + (M.partial.length
+        ? `<b>Incomplete</b> libraries did not complete every one of the ${n} operations, so they are not ranked: a mean over only the operations they finished would skip the work they cannot do. Their marks are still shown, and they are listed below the ranking with a partial geometric mean for reference only.`
+        : '');
+  }
+
+  function dotTooltip(r){
+    const M = dm();
+    const head = r.complete
+      ? `Rank ${r.rank} of ${M.ranked.length} · geo. mean ${fmtRatio(r.gm)}`
+      : `Incomplete · ${r.done} of ${M.ops.length} operations · not ranked`;
+    const lines = r.pts.map(p=>
+      `<div class="tt-line"><span class="tt-k">${shapeSvg(p.op,12)}${p.op.title}</span>`
+      + (p.ratio==null ? `<b style="color:var(--muted)">no result</b></div>`
+                       : `<b>${M.fmt(p.v)} · ${fmtRatio(p.ratio)}${p.ratio<1.005?` (${M.best})`:''}</b></div>`)).join('');
+    tip.innerHTML = `<div class="tt-head">${labelOf(r.lib)}</div><div class="tt-op">${head}</div>${lines}`;
+  }
+
+  function buildDotPlot(){
+    const host = document.getElementById('dotPlot');
+    const W = Math.max(host.clientWidth, 300);
+    const narrow = W < 560;
+    const labelW = narrow ? 112 : 176, padR = 18, rowH = 36, top = 6, gapH = 34, axisH = 46;
+    const x0 = labelW + 12, x1 = W - padR;
+    const M = dm(), { ranked, partial } = M;
+    const maxR = Math.max(1, ...[...ranked, ...partial].flatMap(r=>r.pts.map(p=>p.ratio||1)));
+    // 1-2-5 tick ladder up to the first tick at or above the largest ratio.
+    const ladder = [];
+    for(let e=0; ladder.length===0 || ladder[ladder.length-1] < maxR; e++) [1,2,5].forEach(m=>ladder.push(m*10**e));
+    while(ladder.length>1 && ladder[ladder.length-2] >= maxR) ladder.pop();
+    const xMax = ladder[ladder.length-1];
+    const xs = v => x0 + (Math.log(v)/Math.log(xMax))*(x1-x0);
+    const minGap = narrow ? 34 : 30;
+    let ticks = ladder.filter((t,i,a)=> i===0 || xs(t)-xs(a[i-1]) >= minGap);
+    if(ticks.length < ladder.length && ladder.some((t,i)=>i && xs(t)-xs(ladder[i-1]) < minGap))
+      ticks = ladder.filter(t=>Math.log10(t)%1===0 || t===xMax);
+
+    const plotH = (ranked.length + partial.length)*rowH + (partial.length ? gapH : 0);
+    const H = top + plotH + axisH;
+    const tickLbl = t => t.toLocaleString()+'×';
+    let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Dot plot of ${M.axis.toLowerCase()} per operation for each library, log scale. Lower is better.">`;
+    // grid
+    ticks.forEach(t=>{
+      const x = xs(t);
+      s += `<line x1="${x}" x2="${x}" y1="${top}" y2="${top+plotH}" style="stroke:${t===1?'var(--baseline)':'var(--grid)'}" stroke-width="${t===1?1.5:1}"/>`;
+      s += `<text x="${x}" y="${top+plotH+16}" text-anchor="middle" font-size="11.5" style="fill:var(--muted)">${tickLbl(t)}</text>`;
+    });
+    s += `<text x="${(x0+x1)/2}" y="${top+plotH+38}" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--text-secondary)">${M.axis}</text>`;
+
+    let y = top;
+    const rowSvg = r => {
+      const cy = y + rowH/2;
+      let g = `<g class="dp-row" data-lib="${esc(r.lib)}">`;
+      g += `<rect class="dp-bg" x="0" y="${y+1}" width="${W}" height="${rowH-2}" rx="6" style="fill:transparent"/>`;
+      g += `<line x1="${x0}" x2="${x1}" y1="${cy}" y2="${cy}" style="stroke:var(--grid)" stroke-dasharray="2 3"/>`;
+      const rankTxt = r.complete ? `${r.rank}.` : '';
+      g += `<text x="${narrow?0:4}" y="${cy-3}" font-size="12.5" font-weight="550" style="fill:${r.complete?'var(--text-primary)':'var(--text-secondary)'}">`
+        + (narrow ? '' : `<tspan style="fill:var(--muted)" font-variant-numeric="tabular-nums">${rankTxt}</tspan> `)
+        + `${esc(labelOf(r.lib))}</text>`;
+      g += `<text x="${narrow?0:4}" y="${cy+11}" font-size="11" style="fill:var(--muted)">`
+        + (r.complete ? `${narrow?'#'+r.rank+' · ':''}geo. mean ${fmtRatio(r.gm)}`
+                      : `${r.done}/${M.ops.length} ops · (${fmtRatio(r.gm)})`) + `</text>`;
+      // Marks closer than a mark's width would hide each other, so step each one in a
+      // collision run off the row line (0, up, down, further up, …).
+      const DODGE = [0,-7,7,-13,13,-19];
+      let run = 0, lastX = -1e9;
+      r.pts.filter(p=>p.ratio!=null).sort((a,b)=>a.ratio-b.ratio).forEach(p=>{
+        const x = xs(p.ratio);
+        run = x - lastX < 10 ? run+1 : 0;
+        lastX = x;
+        g += `<path d="${p.op.shape}" transform="translate(${x.toFixed(1)},${cy + DODGE[run % DODGE.length]})" style="fill:${p.op.color};stroke:var(--surface)" stroke-width="1.5" paint-order="stroke"/>`;
+      });
+      g += `</g>`;
+      y += rowH;
+      return g;
+    };
+    ranked.forEach(r=> s += rowSvg(r));
+    if(partial.length){
+      const ly = y + gapH/2 + 4;
+      s += `<line x1="0" x2="${W}" y1="${y+8}" y2="${y+8}" style="stroke:var(--baseline)"/>`;
+      s += `<text x="${narrow?0:4}" y="${ly+4}" font-size="11" font-weight="650" letter-spacing=".06em" style="fill:var(--muted)">INCOMPLETE — NOT RANKED</text>`;
+      y += gapH;
+      partial.forEach(r=> s += rowSvg(r));
+    }
+    s += `</svg>`;
+    host.innerHTML = s;
+
+    const byLib = Object.fromEntries([...ranked, ...partial].map(r=>[r.lib, r]));
+    host.querySelectorAll('.dp-row').forEach(g=>{
+      const r = byLib[g.dataset.lib];
+      g.addEventListener('mousemove', e=>{
+        dotTooltip(r);
+        tip.style.opacity=1;
+        const pad=14, w=tip.offsetWidth, h=tip.offsetHeight;
+        let tx=e.clientX+pad, ty=e.clientY+pad;
+        if(tx+w>innerWidth-8) tx=e.clientX-w-pad;
+        if(ty+h>innerHeight-8) ty=e.clientY-h-pad;
+        tip.style.left=tx+'px'; tip.style.top=ty+'px';
+      });
+      g.addEventListener('mouseleave', ()=>{ tip.style.opacity=0; });
+    });
+  }
+
+  function buildDotTable(){
+    const M = dm(), rows = [...M.ranked, ...M.partial];
+    const what = M.m==='time' ? 'Mean time (ms) and multiple of the fastest time'
+                              : 'Allocated memory (MB) and multiple of the leanest allocation';
+    document.getElementById('dotTable').innerHTML =
+      `<table>
+        <caption>${what} for each operation. Geo. mean is the geometric mean of the multiples; incomplete libraries are not ranked.</caption>
+        <thead><tr><th>Rank</th><th>Library</th>${M.ops.map(op=>`<th>${op.title}</th>`).join('')}<th>Geo. mean</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td>${r.complete ? r.rank : 'Incomplete'}</td>
+          <td style="text-align:left">${labelOf(r.lib)}</td>
+          ${r.pts.map(p=> p.ratio==null ? '<td>—</td>' : `<td>${M.fmt(p.v)} · ${fmtRatio(p.ratio)}</td>`).join('')}
+          <td>${r.complete ? fmtRatio(r.gm) : `(${fmtRatio(r.gm)}, ${r.done}/${M.ops.length})`}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+
   function setFootnote(){
     const fn = document.getElementById('footnote');
     fn.innerHTML = measure==='time'
@@ -451,6 +679,8 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
     document.getElementById('heatView').style.display  = view==='heat'   ? 'block' : 'none';
     document.getElementById('footnote').style.display  = view==='heat'   ? 'none' : 'block';
     document.getElementById('hint').style.display      = view==='charts' ? 'block' : 'none';
+    document.getElementById('dotSection').style.display = view==='charts' && dm().ops.length ? 'block' : 'none';
+    if(view==='charts' && dm().ops.length) buildDotPlot();
     heatBtn.setAttribute('aria-pressed', view==='heat');
     tableBtn.setAttribute('aria-pressed', view==='table');
     heatBtn.textContent  = view==='heat'  ? 'Charts' : 'Heat table';
@@ -474,6 +704,22 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
      && document.documentElement.getAttribute('data-theme')!=='light'){ themeBtn.textContent='Light'; }
 
   buildLegend(); buildPanels(); buildTable(); buildHeatTable(); setFootnote();
+  if(dm().ops.length){
+    document.getElementById('dotSection').style.display = 'block';
+    const dBtns = { time: document.getElementById('dTime'), mem: document.getElementById('dMem') };
+    const switchDot = m => {
+      dotMeasure = m;
+      Object.entries(dBtns).forEach(([k,b])=> b.setAttribute('aria-pressed', k===m));
+      buildDotText(); buildDotTable(); buildDotPlot();
+    };
+    Object.entries(dBtns).forEach(([k,b])=>{
+      if(!DOT_MODELS[k].ops.length) b.disabled = true;   // no data for this measure at all
+      b.addEventListener('click', ()=>switchDot(k));
+    });
+    switchDot(dotMeasure);
+    let rz = 0;
+    addEventListener('resize', ()=>{ cancelAnimationFrame(rz); rz = requestAnimationFrame(()=>{ if(view==='charts') buildDotPlot(); }); });
+  }
 })();
 </script>
 </body>

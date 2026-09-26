@@ -80,6 +80,12 @@ std-dev line, and hides the whisker sentence in the hint. Re-run
   library keeps one color across every panel. The palette carries 8 slots (validated for
   colorblind separation); a 9th library would cycle — fold rare libraries together or extend
   the `--s*` variables if you ever exceed 8.
+- **Overall dot plot** (below the bar panels, with its own Speed/Memory switch): one row per
+  library, one mark per operation, placed at the value ÷ that operation's best completed value
+  (fastest time, or least memory allocated) on a log axis. Rows are
+  ranked by the geometric mean of those ratios. A library missing any operation is not ranked
+  (a mean over a subset skips the work it cannot do); it is listed under *Incomplete* with a
+  partial mean for reference. Operations use their own `--op1`…`--op6` colours plus a shape each.
 - **The outlier** (e.g. ClosedXML reading every cell) is handled by scaling each panel
   independently rather than a global axis, so the smaller bars stay readable. The heat table
   uses a per-operation log scale for the same reason.
