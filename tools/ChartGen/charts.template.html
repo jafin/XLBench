@@ -102,6 +102,11 @@
            transform:translateY(-50%); opacity:.6; pointer-events:none;}
   .whisker::before{content:""; position:absolute; top:50%; left:0; right:0; height:1.5px; background:var(--muted); transform:translateY(-50%);}
   .row.dim{opacity:.28;}
+  /* A library with no result for an operation: pinned below the measured rows, empty hatched track. */
+  .row.incomplete .name{color:var(--text-secondary);}
+  .row.incomplete .val{font-size:10.5px; font-weight:650; letter-spacing:.06em; color:var(--muted);}
+  .row.incomplete .track{background:repeating-linear-gradient(135deg, var(--track) 0 6px, transparent 6px 12px);
+    box-shadow:inset 0 0 0 1px var(--grid);}
   .note{font-size:11.5px; color:var(--muted); margin-top:14px; padding-top:12px; border-top:1px solid var(--grid);}
 
   #tip{position:fixed; z-index:50; pointer-events:none; opacity:0; transition:opacity .12s;
@@ -277,6 +282,22 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
     row.addEventListener('mouseleave', ()=>{ tip.style.opacity=0; document.querySelectorAll('.row').forEach(r=>r.classList.remove('dim')); });
   }
 
+  function attachIncompleteTip(row, lib, op){
+    row.addEventListener('mousemove', e=>{
+      tip.innerHTML =
+        `<div class="tt-head"><i class="swatch" style="background:${COLORS[lib]}"></i>${labelOf(lib)}</div>
+         <div class="tt-op">${op.title}${op.tag?' · '+op.tag:''}</div>
+         <div class="tt-line"><span>No result: this library cannot perform this benchmark.</span></div>`;
+      tip.style.opacity=1;
+      const pad=14, w=tip.offsetWidth, h=tip.offsetHeight;
+      let x=e.clientX+pad, y=e.clientY+pad;
+      if(x+w>innerWidth-8) x=e.clientX-w-pad;
+      if(y+h>innerHeight-8) y=e.clientY-h-pad;
+      tip.style.left=x+'px'; tip.style.top=y+'px';
+    });
+    row.addEventListener('mouseleave', ()=>{ tip.style.opacity=0; });
+  }
+
   function buildPanels(){
     const hostEl = document.getElementById('panels');
     hostEl.innerHTML = '';
@@ -314,6 +335,18 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
           `<div class="rlabel"><span class="name">${labelOf(d.lib)}</span><span class="val">${fmtVal(v)}${deltaStr}</span></div>
            <div class="track"><div class="fill" style="width:${pct}%; background:${COLORS[d.lib]}"></div>${whisker}</div>`;
         attachTip(row, d);
+        rowsEl.appendChild(row);
+      });
+      // Libraries with no result here could not run this benchmark (the feature is missing, or
+      // the API cannot express it). Show them anyway, always last, so an absence reads as a
+      // result rather than an omission.
+      LIBS.filter(l=>!rows.some(d=>d.lib===l)).forEach(lib=>{
+        const row = document.createElement('div');
+        row.className = 'row incomplete';
+        row.innerHTML =
+          `<div class="rlabel"><span class="name">${labelOf(lib)}</span><span class="val">BENCHMARK INCOMPLETE</span></div>
+           <div class="track"></div>`;
+        attachIncompleteTip(row, lib, op);
         rowsEl.appendChild(row);
       });
       hostEl.appendChild(panel);
@@ -395,8 +428,8 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   function setFootnote(){
     const fn = document.getElementById('footnote');
     fn.innerHTML = measure==='time'
-      ? 'Note: each panel is scaled independently, so a single very slow run (e.g. ClosedXML reading every cell) doesn’t crush the smaller bars. Streaming APIs that have no separate “open workbook” step simply don’t appear in that panel.'
-      : 'Note: memory is total managed bytes allocated over the run (not peak working set). Streaming APIs with no separate “open workbook” step don’t appear in that panel.';
+      ? 'Note: each panel is scaled independently, so a single very slow run (e.g. ClosedXML reading every cell) doesn’t crush the smaller bars. A library marked BENCHMARK INCOMPLETE cannot perform that operation (e.g. a streaming API has no workbook to edit), so it has no result and is always listed last.'
+      : 'Note: memory is total managed bytes allocated over the run (not peak working set). A library marked BENCHMARK INCOMPLETE cannot perform that operation, so it has no result and is always listed last.';
   }
 
   // ---- controls & views ----
