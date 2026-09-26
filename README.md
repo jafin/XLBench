@@ -54,7 +54,7 @@ This uses a smaller **1,000 × 8** workbook because the test is about opening, c
 
 The returned result is the serialized workbook length so the save cannot be optimized away.
 
-Streaming-only libraries do not take part in this test.
+MiniExcel and Sylvan do not take part in this test, because they cannot edit an existing workbook. The OpenXML SDK has no workbook object model, but it edits the package directly: it changes `PackageProperties` and does not parse the worksheets.
 
 #### `OpenAndReadAll`
 
@@ -601,13 +601,13 @@ If an output workbook is already open in Excel, saving is skipped with a warning
 
 ## Fairness notes
 
-* OpenXML SDK, MiniExcel and Sylvan are streaming APIs, so they do not take part in the eager workbook-open benchmark.
+* MiniExcel and Sylvan are streaming reader/writers, so they do not take part in the properties round trip. The OpenXML SDK does take part: it edits the package's core properties without loading the worksheets, which is different work from the libraries that load the whole workbook.
 * MiniExcel has no formula engine. Its write benchmark stores a pre-calculated total instead of a `SUM()` formula.
 * MiniExcel cannot edit an existing workbook, so it is excluded from Edit and Insert.
 * Sylvan's writer has no formula support, so, like MiniExcel, its write benchmark stores a pre-calculated total. The writer only accepts a `DbDataReader`, so the rows go through `Sylvan.Data`'s `AsDataReader()` adapter. Sylvan cannot style or edit a workbook, so it is excluded from Report, Edit and Insert.
 * Shared input workbooks are generated once with ClosedXML outside the measured code.
 * Telerik has no document `Category` property, so its metadata test only changes `Title`.
-* ClosedXML, XLibur, NPOI and IronXL keep the existing OPC core-properties location when changing metadata.
+* ClosedXML, XLibur, NPOI, IronXL, OfficeIMO and the OpenXML SDK keep the existing OPC core-properties location when changing metadata.
 * EPPlus writes a new `docProps/core.xml` while leaving the original core-properties relationship in the package. This can produce two core-properties relationships. Excel reads the workbook, but strict readers may choose the wrong one.
 * The main read sheet contains 750,000 cells. This is large enough to expose memory behaviour while still being practical to benchmark.
 * Edit and Insert produce matching output across libraries, except that OpenXML SDK performs formula calculation in benchmark code because the SDK has no calculation engine.

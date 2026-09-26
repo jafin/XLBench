@@ -7,17 +7,45 @@ using XLBench.Data;
 namespace XLBench.Benchmarks.Read;
 
 /// <summary>
-/// OpenXML SDK is a low-level streaming API — there is no eager "load the whole workbook
-/// into an object model" operation, so only <see cref="OpenAndReadAll"/> is benchmarked.
-/// Values are read via a SAX-style <see cref="OpenXmlReader"/> with the shared string table
-/// materialized once (the idiomatic performant pattern).
+/// OpenXML SDK is a low-level package API with no workbook object model. In
+/// <see cref="OpenAndReadAll"/> values are read via a SAX-style <see cref="OpenXmlReader"/> with
+/// the shared string table materialized once (the idiomatic performant pattern).
 /// </summary>
 public class OpenXmlReadBenchmarks
 {
     private byte[] _bytes = null!;
+    private byte[] _propertiesBytes = null!;
 
     [GlobalSetup]
-    public void Setup() => _bytes = TestData.ReadXlsx;
+    public void Setup()
+    {
+        _bytes = TestData.ReadXlsx;
+        PropertiesData.EnsureLoaded();
+        _propertiesBytes = PropertiesData.SourceXlsx;
+    }
+
+    /// <inheritdoc cref="ClosedXmlReadBenchmarks.OpenAmendPropertiesAndSave"/>
+    /// <remarks>
+    /// The SDK edits a package in place, so the input is first copied into an expandable stream
+    /// and that stream becomes the output. Title and Category are set on
+    /// <c>PackageProperties</c>, the OPC core-properties part the package already points at, and
+    /// disposing the document writes the package back into the stream. The worksheet parts are
+    /// never parsed, which is the SDK's advantage here: only the parts that change are touched.
+    /// </remarks>
+    [Benchmark]
+    public long OpenAmendPropertiesAndSave()
+    {
+        var output = new MemoryStream();
+        output.Write(_propertiesBytes);
+
+        using (var doc = SpreadsheetDocument.Open(output, isEditable: true))
+        {
+            doc.PackageProperties.Title = PropertiesData.Title;
+            doc.PackageProperties.Category = PropertiesData.Category;
+        }
+
+        return output.Length;
+    }
 
     [Benchmark]
     public long OpenAndReadAll()

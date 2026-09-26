@@ -24,7 +24,13 @@ public static class BenchmarkConfig
             .WithOption(ConfigOptions.JoinSummary, true)
             .AddColumn(new LibraryNameColumn())
             .AddDiagnoser(MemoryDiagnoser.Default)
-            .AddExporter(MarkdownExporter.GitHub);
+            .AddExporter(MarkdownExporter.GitHub)
+            // Pin the table units. BenchmarkDotNet otherwise picks one unit for the whole joined
+            // table from the fastest row, so a single sub-millisecond result switches every row to
+            // μs and KB. That also makes snapshotted rows, recorded in ms, unusable in the table.
+            .WithSummaryStyle(SummaryStyle.Default
+                .WithTimeUnit(Perfolizer.Horology.TimeUnit.Millisecond)
+                .WithSizeUnit(Perfolizer.Metrology.SizeUnit.MB));
 
         // The Namespace column is always "XLBench.Benchmarks.Read/Write" — redundant, and it
         // widens the results table. Hide it (the Library + Type + Method columns identify each row).
