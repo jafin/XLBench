@@ -29,7 +29,7 @@
     --track:#efeee9; --heat-hot:#154a8c; --link:#0969da;
     --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
     --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
-    --s9:#8a5a2b;
+    --s9:#8a5a2b; --s10:#5f7f99;
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
@@ -39,7 +39,7 @@
     --track:#232321; --heat-hot:#6da7ec; --link:#4493f8;
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
     --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-    --s9:#b8865a;
+    --s9:#b8865a; --s10:#8fa9bf;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -50,7 +50,7 @@
       --track:#232321; --heat-hot:#6da7ec; --link:#4493f8;
       --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
       --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-      --s9:#b8865a;
+      --s9:#b8865a; --s10:#8fa9bf;
     }
   }
   *{box-sizing:border-box}
@@ -215,7 +215,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   const LIBS = PAYLOAD.versions ? Object.keys(PAYLOAD.versions)
              : [...new Set(PAYLOAD.scenarios.flatMap(s=>s.libraries))];
   const COLORS = {};
-  LIBS.forEach((l,i)=> COLORS[l] = `var(--s${(i%9)+1})`);
+  LIBS.forEach((l,i)=> COLORS[l] = `var(--s${(i%10)+1})`);
 
   // Operations from scenarios; split "Read · open workbook" into tag + title.
   const OPS = PAYLOAD.scenarios.map(s=>{

@@ -30,6 +30,10 @@
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
     <PackageReference Include="NPOI" Version="2.8.1" />
     <PackageReference Include="MiniExcel" Version="1.46.0" />
+    <!-- Sylvan.Data.Excel is a DbDataReader/DbDataWriter pair; its writer only takes a DbDataReader,
+         and Sylvan.Data (same author) supplies the IEnumerable<T>.AsDataReader() adapter for it. -->
+    <PackageReference Include="Sylvan.Data.Excel" Version="0.5.8" />
+    <PackageReference Include="Sylvan.Data" Version="0.2.17" />
     <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
     <PackageReference Include="XLibur.Bundle" Version="0.620.0" />

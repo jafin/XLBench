@@ -66,6 +66,7 @@ public static class LibraryNames
         var n when n.StartsWith("OpenXml") => "OpenXML SDK",
         var n when n.StartsWith("Npoi") => "NPOI",
         var n when n.StartsWith("MiniExcel") => "MiniExcel",
+        var n when n.StartsWith("Sylvan") => "Sylvan",
         var n when n.StartsWith("XLibur") => "XLibur",
         var n when n.StartsWith("OfficeImo") => "OfficeIMO",
         var n when n.StartsWith("IronXl") => "IronXL",

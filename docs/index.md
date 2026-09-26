@@ -7,7 +7,7 @@ logo: /xlbench-logo.png
 
 <p>
 Independent performance and memory benchmarks comparing
-ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur, OfficeIMO, IronXL and Telerik.
+ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, Sylvan, XLibur, OfficeIMO, IronXL and Telerik.
 </p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
@@ -27,6 +27,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.1 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
+| [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel) | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel) | 0.5.8 |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.620.0 |
 | [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.4.3 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.9.2 |
@@ -76,6 +77,7 @@ less work, so read its timing against this table.
 | OpenXML SDK | ✅ | ⚠️ hand-authored | ⚠️ estimated width | ⚠️ hand-authored |
 | NPOI | ✅ | ✅ | ✅ | ⚠️ titled, invalid XML |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
+| Sylvan | ❌ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
 | OfficeIMO | ✅ | ✅ | ✅ | ✅ |
 | IronXL | ✅ | ⚠️ font colour only | ✅ | ✅ |
@@ -90,6 +92,7 @@ less work, so read its timing against this table.
 | OpenXML SDK | ⚠️ hand-authored | ⚠️ hand-authored | ❌ sums computed by the benchmark |
 | NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
+| Sylvan | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
 | OfficeIMO | ✅ | ✅ `DeleteRows()`, once per row | ✅ lightweight engine |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ |
@@ -104,6 +107,7 @@ less work, so read its timing against this table.
 | OpenXML SDK | ⚠️ hand-authored | ⚠️ hand-authored | ❌ sums computed by the benchmark |
 | NPOI | ✅ | ✅ `XSSFSheet.ShiftColumns()` | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
+| Sylvan | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ |
 | OfficeIMO | ✅ | ✅ `InsertColumns(first, count)` | ✅ lightweight engine |
 | IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ |
@@ -116,8 +120,8 @@ All 500 row totals in every saved artifact are checked against the source CSV on
 
 - **Timings are hardware-specific.** The allocation and GC columns are the most portable
   signal when comparing across machines.
-- OpenXML SDK and MiniExcel are streaming APIs with no eager "load workbook" step, so they
-  only appear in the read-all scenario.
+- OpenXML SDK, MiniExcel and Sylvan are streaming APIs with no eager "load workbook" step, so
+  they only appear in the read-all scenario.
 - Telerik's `Workbook.DocumentInfo` has no `Category`, so its properties round trip writes the
   Title only — one property fewer than the other five.
 - The other five libraries in the properties round trip persist both properties, but not to the
@@ -129,7 +133,9 @@ All 500 row totals in every saved artifact are checked against the source CSV on
 - MiniExcel has no formula engine; its write total is a pre-computed value rather than a
   `SUM()` formula. It supports neither conditional formatting nor charts, so it sits out the
   report scenario entirely, and it has no cell model to open and mutate, so it sits out the
-  edit and insert scenarios too. All other differences are noted inline in the source.
+  edit and insert scenarios too. Sylvan is the same shape: a `DbDataReader`/`DbDataWriter` pair
+  with no formulas, styling or editing, so it only runs read-all and write, and its write total
+  is pre-computed too. All other differences are noted inline in the source.
 - Telerik's report row has a wide error bar by nature, not by undersampling: the scenario
   allocates ~430 MB per operation and two gen2 collections come with it, so iteration times
   scatter by ~16% however long the run. It is still roughly 5x the next slowest library there,
