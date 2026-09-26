@@ -95,7 +95,9 @@ $remote = git -C $repoRoot remote get-url origin 2>$null
 $repoNwo = if ($remote -match 'github\.com[:/](?<nwo>[^/]+/[^/]+?)(\.git)?$') { $Matches.nwo } else { 'jafin/XLBench' }
 
 # -it lets Ctrl+C stop the container, but docker refuses it when stdin is not a terminal.
-$ttyArgs = if ([Console]::IsInputRedirected) { @() } else { @('-it') }
+# Wrap the whole expression in @(): an `if` unrolls a one-element array to a plain string, and
+# Windows PowerShell 5.1 splats a string character by character (docker then sees "-" as the image).
+$ttyArgs = @(if (-not [Console]::IsInputRedirected) { '-it' })
 
 docker run --rm @ttyArgs `
     --name xlbench-docs `
