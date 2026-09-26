@@ -26,18 +26,18 @@
   <!-- Excel libraries under test — all referenced via NuGet only. -->
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.1" />
-    <PackageReference Include="EPPlus" Version="8.7.0" />
+    <PackageReference Include="EPPlus" Version="8.7.1" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
-    <PackageReference Include="NPOI" Version="2.8.0" />
+    <PackageReference Include="NPOI" Version="2.8.1" />
     <PackageReference Include="MiniExcel" Version="1.46.0" />
     <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
-    <PackageReference Include="XLibur.Bundle" Version="0.610.0" />
+    <PackageReference Include="XLibur.Bundle" Version="0.620.0" />
     <!-- RadSpreadProcessing. The cell model lives in Telerik.Documents.Spreadsheet; reading and
          writing .xlsx needs the OpenXml format provider alongside it. Telerik.Documents.Core and
          Telerik.Licensing come in transitively. -->
-    <PackageReference Include="Telerik.Documents.Spreadsheet" Version="2026.3.826" />
-    <PackageReference Include="Telerik.Documents.Spreadsheet.FormatProviders.OpenXml" Version="2026.3.826" />
+    <PackageReference Include="Telerik.Documents.Spreadsheet" Version="2026.3.923" />
+    <PackageReference Include="Telerik.Documents.Spreadsheet.FormatProviders.OpenXml" Version="2026.3.923" />
   </ItemGroup>
 
 </Project>
