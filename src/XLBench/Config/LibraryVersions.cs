@@ -20,6 +20,7 @@ public static class LibraryVersions
         ("OpenXML SDK", VersionOf(typeof(DocumentFormat.OpenXml.Packaging.SpreadsheetDocument))),
         ("NPOI", VersionOf(typeof(NPOI.XSSF.UserModel.XSSFWorkbook))),
         ("MiniExcel", VersionOf(typeof(MiniExcelLibs.MiniExcel))),
+        ("Sylvan", VersionOf(typeof(Sylvan.Data.Excel.ExcelDataReader))),
             ("XLibur", VersionOf(typeof(XLibur.Excel.XLWorkbook))),
             ("OfficeIMO", VersionOf(typeof(OfficeIMO.Excel.ExcelDocument))),
         ];

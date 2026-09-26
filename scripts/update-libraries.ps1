@@ -55,6 +55,8 @@ $librariesUnderTest = @(
     'DocumentFormat.OpenXml'
     'NPOI'
     'MiniExcel'
+    'Sylvan.Data.Excel'
+    'Sylvan.Data'
     'XLibur.Bundle'
     'OfficeIMO.Excel'
     'IronXL.Excel'

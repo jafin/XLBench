@@ -15,6 +15,7 @@ Libraries are installed from NuGet and tested on **.NET 10** using [BenchmarkDot
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK)                                  | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml)                                                                                                                                    | 3.5.1      | Low-level OOXML API                                                                            | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [NPOI](https://github.com/nissl-lab/npoi)                                              | [`NPOI`](https://www.nuget.org/packages/NPOI)                                                                                                                                                                        | 2.8.1      | Java POI port                                                                                  | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ                                                  |
 | [MiniExcel](https://github.com/mini-software/MiniExcel)                                | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel)                                                                                                                                                              | 1.46.0     | Streaming, POCO/dynamic focused                                                                | [Apache-2.0](https://licenses.nuget.org/Apache-2.0)                                                    |
+| [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel)                               | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel)                                                                                                                                              | 0.5.8      | Streaming `DbDataReader` / `DbDataWriter`                                                      | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [XLibur](https://github.com/XLibur/XLibur)                                             | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle)                                                                                                                                                      | 0.620.0    | Includes and registers the SkiaSharp font engine                                               | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [OfficeIMO](https://github.com/EvotecIT/OfficeIMO)                                     | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel)                                                                                                                                                  | 3.4.3      | Built on the OpenXML SDK; own lightweight formula engine                                       | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [IronXL](https://ironsoftware.com/csharp/excel/)                                       | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel)                                                                                                                                                        | 2026.9.2   | **Commercial.** Requires a licence key. Without one, saved benchmark results are used instead. | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/)                                   |
@@ -65,7 +66,7 @@ Each library uses its normal API:
 * OfficeIMO: `ExcelSheet.EnumerateCells()`
 * EPPlus: `Cells`
 * NPOI: row enumeration
-* OpenXML SDK/MiniExcel: streaming
+* OpenXML SDK/MiniExcel/Sylvan: streaming
 
 Random `Cell(row, col)` access is avoided where it is not the library's normal usage pattern.
 
@@ -177,6 +178,7 @@ Every benchmark uses `[MemoryDiagnoser]`, so results include allocations and Gen
 | OpenXML SDK |       ✅       |        ⚠️ manual       |   ⚠️ estimated  | ⚠️ manual | ✅ schema-clean    |
 | NPOI        |       ✅       |            ✅           |        ✅        |     ✅     | ⚠️ 1 schema error |
 | MiniExcel   |       ✅       |            ❌           |        ❌        |     ❌     | — not benchmarked |
+| Sylvan      |       ❌       |            ❌           |        ❌        |     ❌     | — not benchmarked |
 | XLibur      |       ✅       |            ✅           |        ✅        |     ✅     | ✅ schema-clean    |
 | OfficeIMO   |       ✅       |            ✅           |        ✅        |     ✅     | ✅ schema-clean    |
 | IronXL      |       ✅       |      ⚠️ font only      |        ✅        |     ✅     | ⚠️ 1 schema error |
@@ -216,6 +218,10 @@ MiniExcel does not support conditional formatting or charts.
 
 Benchmarking only its data-writing part against libraries doing the full report would be misleading, so it is excluded from this scenario.
 
+### Sylvan
+
+Sylvan.Data.Excel writes a whole `DbDataReader` to a worksheet. It has no cell styles, conditional formatting, column sizing or charts, so it is excluded from this scenario.
+
 ### XLibur
 
 XLibur charts do not show a legend unless `Legend.Visible` is enabled, so the benchmark sets it explicitly.
@@ -247,6 +253,7 @@ Telerik charts are sized using pixels rather than a second cell anchor, so the b
 | OpenXML SDK |  ⚠️ manual  |           ⚠️ manual          | ❌ benchmark calculates | ✅                 |
 | NPOI        |      ✅      | ⚠️ `RemoveRow` + `ShiftRows` |            ✅           | ✅                 |
 | MiniExcel   |      ❌      |               ❌              |            ❌           | — not benchmarked |
+| Sylvan      |      ❌      |               ❌              |            ❌           | — not benchmarked |
 | XLibur      |      ✅      |     ✅ `IXLRows.Delete()`     |            ✅           | ✅                 |
 | OfficeIMO   |      ✅      |    ✅ `DeleteRows()` per row  |            ✅           | ✅                 |
 | IronXL      |      ✅      |        ✅ `RemoveRow()`       |            ✅           | ✅                 |
@@ -312,6 +319,10 @@ The SDK also has no calculation engine, so the benchmark calculates the totals i
 
 MiniExcel is a streaming reader/writer. It has no editable workbook model or formula calculation engine, so it cannot run this scenario.
 
+### Sylvan
+
+Sylvan.Data.Excel is also a streaming reader/writer with no editable workbook model or calculation engine, so it cannot run this scenario either.
+
 ### Why only 500 rows?
 
 Row deletion is roughly quadratic for several libraries.
@@ -331,6 +342,7 @@ The row count is controlled by `EditData.MaxRows`.
 | OpenXML SDK |  ⚠️ manual  |              ⚠️ manual              | ❌ benchmark calculates |         ✅         |
 | NPOI        |      ✅      |     ✅ `XSSFSheet.ShiftColumns()`    |            ✅           |         ✅         |
 | MiniExcel   |      ❌      |                  ❌                  |            ❌           | — not benchmarked |
+| Sylvan      |      ❌      |                  ❌                  |            ❌           | — not benchmarked |
 | XLibur      |      ✅      | ✅ `IXLColumn.InsertColumnsBefore()` |            ✅           |         ✅         |
 | OfficeIMO   |      ✅      |   ✅ `InsertColumns(first, count)`   |            ✅           |         ✅         |
 | IronXL      |      ✅      |   ✅ `InsertColumns(index, count)`   |            ✅           |         ✅         |
@@ -386,6 +398,10 @@ XLBench does not force them to match because doing so would require extra librar
 ### MiniExcel
 
 MiniExcel cannot edit an existing workbook in place, so it is excluded.
+
+### Sylvan
+
+Sylvan.Data.Excel cannot edit an existing workbook either, so it is excluded.
 
 ## IronXL — licence-gated and snapshotted
 
@@ -576,9 +592,10 @@ If an output workbook is already open in Excel, saving is skipped with a warning
 
 ## Fairness notes
 
-* OpenXML SDK and MiniExcel are streaming APIs, so they do not take part in the eager workbook-open benchmark.
+* OpenXML SDK, MiniExcel and Sylvan are streaming APIs, so they do not take part in the eager workbook-open benchmark.
 * MiniExcel has no formula engine. Its write benchmark stores a pre-calculated total instead of a `SUM()` formula.
 * MiniExcel cannot edit an existing workbook, so it is excluded from Edit and Insert.
+* Sylvan's writer has no formula support, so, like MiniExcel, its write benchmark stores a pre-calculated total. The writer only accepts a `DbDataReader`, so the rows go through `Sylvan.Data`'s `AsDataReader()` adapter. Sylvan cannot style or edit a workbook, so it is excluded from Report, Edit and Insert.
 * Shared input workbooks are generated once with ClosedXML outside the measured code.
 * Telerik has no document `Category` property, so its metadata test only changes `Title`.
 * ClosedXML, XLibur, NPOI and IronXL keep the existing OPC core-properties location when changing metadata.
