@@ -7,7 +7,7 @@ logo: /xlbench-logo.png
 
 <p>
 Independent performance and memory benchmarks comparing
-ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur, IronXL and Telerik.
+ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, XLibur, OfficeIMO, IronXL and Telerik.
 </p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
@@ -28,6 +28,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.1 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.620.0 |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.4.3 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.9.2 |
 | [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.923 |
 
@@ -76,6 +77,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ✅ | ✅ | ⚠️ titled, invalid XML |
 | MiniExcel | ✅ | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ | ✅ | ✅ |
+| OfficeIMO | ✅ | ✅ | ✅ | ✅ |
 | IronXL | ✅ | ⚠️ font colour only | ✅ | ✅ |
 | Telerik | ✅ | ✅ | ✅ | ✅ |
 
@@ -89,6 +91,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ⚠️ `RemoveRow` + `ShiftRows` | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLRow.Delete()` | ✅ |
+| OfficeIMO | ✅ | ✅ `DeleteRows()`, once per row | ✅ lightweight engine |
 | IronXL | ✅ | ✅ `RemoveRow()` | ✅ |
 | Telerik | ✅ | ✅ `RowSelection.Remove()` | ✅ |
 
@@ -102,6 +105,7 @@ less work, so read its timing against this table.
 | NPOI | ✅ | ✅ `XSSFSheet.ShiftColumns()` | ✅ |
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ `IXLColumn.InsertColumnsBefore()` | ✅ |
+| OfficeIMO | ✅ | ✅ `InsertColumns(first, count)` | ✅ lightweight engine |
 | IronXL | ✅ | ✅ `InsertColumns(index, count)` | ✅ |
 | Telerik | ✅ | ✅ `ColumnSelection.Insert()` | ✅ |
 

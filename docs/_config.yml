@@ -1,5 +1,5 @@
 title: XLBench
-description: Compare .NET Excel libraries with reproducible BenchmarkDotNet tests for reading, writing, editing and memory usage. Benchmarks include ClosedXML, EPPlus, NPOI, OpenXML SDK, MiniExcel, XLibur and IronXL.
+description: Compare .NET Excel libraries with reproducible BenchmarkDotNet tests for reading, writing, editing and memory usage. Benchmarks include ClosedXML, EPPlus, NPOI, OpenXML SDK, MiniExcel, XLibur, OfficeIMO, IronXL and Telerik.
 theme: jekyll-theme-cayman
 
 plugins:

@@ -16,6 +16,7 @@ Libraries are installed from NuGet and tested on **.NET 10** using [BenchmarkDot
 | [NPOI](https://github.com/nissl-lab/npoi)                                              | [`NPOI`](https://www.nuget.org/packages/NPOI)                                                                                                                                                                        | 2.8.1      | Java POI port                                                                                  | [Apache-2.0](https://licenses.nuget.org/Apache-2.0) ᴮ                                                  |
 | [MiniExcel](https://github.com/mini-software/MiniExcel)                                | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel)                                                                                                                                                              | 1.46.0     | Streaming, POCO/dynamic focused                                                                | [Apache-2.0](https://licenses.nuget.org/Apache-2.0)                                                    |
 | [XLibur](https://github.com/XLibur/XLibur)                                             | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle)                                                                                                                                                      | 0.620.0    | Includes and registers the SkiaSharp font engine                                               | [MIT](https://licenses.nuget.org/MIT)                                                                  |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO)                                     | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel)                                                                                                                                                  | 3.4.3      | Built on the OpenXML SDK; own lightweight formula engine                                       | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [IronXL](https://ironsoftware.com/csharp/excel/)                                       | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel)                                                                                                                                                        | 2026.9.2   | **Commercial.** Requires a licence key. Without one, saved benchmark results are used instead. | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/)                                   |
 | [Telerik](https://www.telerik.com/document-processing-libraries) (RadSpreadProcessing) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) + [`.FormatProviders.OpenXml`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet.FormatProviders.OpenXml) | 2026.3.923 | **Commercial.** Unlicensed workbooks get a licence worksheet instead of failing.               | [Proprietary EULA](https://www.telerik.com/purchase/license-agreement/document-processing-libraries) ᶜ |
 
@@ -61,6 +62,7 @@ Opens the workbook and reads every populated cell as a string.
 Each library uses its normal API:
 
 * ClosedXML/XLibur: `CellsUsed()`
+* OfficeIMO: `ExcelSheet.EnumerateCells()`
 * EPPlus: `Cells`
 * NPOI: row enumeration
 * OpenXML SDK/MiniExcel: streaming
@@ -176,6 +178,7 @@ Every benchmark uses `[MemoryDiagnoser]`, so results include allocations and Gen
 | NPOI        |       ✅       |            ✅           |        ✅        |     ✅     | ⚠️ 1 schema error |
 | MiniExcel   |       ✅       |            ❌           |        ❌        |     ❌     | — not benchmarked |
 | XLibur      |       ✅       |            ✅           |        ✅        |     ✅     | ✅ schema-clean    |
+| OfficeIMO   |       ✅       |            ✅           |        ✅        |     ✅     | ✅ schema-clean    |
 | IronXL      |       ✅       |      ⚠️ font only      |        ✅        |     ✅     | ⚠️ 1 schema error |
 | Telerik     |       ✅       |            ✅           |        ✅        |     ✅     | ✅ schema-clean    |
 
@@ -219,6 +222,14 @@ XLibur charts do not show a legend unless `Legend.Visible` is enabled, so the be
 
 Older versions also produced invalid chart series XML, but those issues have since been fixed in stable releases.
 
+### OfficeIMO
+
+OfficeIMO's conditional-format helpers (`AddConditionalFormulaRule`) only take a fill colour. The benchmark passes an `ExcelConditionalFormattingInfo` to `AddConditionalFormattingRule` instead, so each rule gets both the fill and the font colour.
+
+The chart is bound to the sheet with `ExcelChartDataRange`. Like Telerik, OfficeIMO sizes charts in pixels, so the benchmark converts the shared chart size into pixels.
+
+There is no row style, so the header is made bold one cell at a time.
+
 ### Telerik
 
 Telerik requires less chart setup than most libraries. `ChartCollection.Add` can infer series and names from the selected range.
@@ -237,6 +248,7 @@ Telerik charts are sized using pixels rather than a second cell anchor, so the b
 | NPOI        |      ✅      | ⚠️ `RemoveRow` + `ShiftRows` |            ✅           | ✅                 |
 | MiniExcel   |      ❌      |               ❌              |            ❌           | — not benchmarked |
 | XLibur      |      ✅      |     ✅ `IXLRows.Delete()`     |            ✅           | ✅                 |
+| OfficeIMO   |      ✅      |    ✅ `DeleteRows()` per row  |            ✅           | ✅                 |
 | IronXL      |      ✅      |        ✅ `RemoveRow()`       |            ✅           | ✅                 |
 | Telerik     |      ✅      |   ✅ `RowSelection.Remove()`  |            ✅           | ✅                 |
 
@@ -258,6 +270,12 @@ Both use:
 ClosedXML processes the rows one by one internally.
 
 XLibur builds a single deletion map, updates formulas once, then removes the rows. This avoids repeating a workbook-wide formula update for every deleted row.
+
+### OfficeIMO
+
+`ExcelSheet.DeleteRows(first, count)` deletes one contiguous block and updates formula references. The deleted rows are not contiguous, so the benchmark calls it once per row, from the bottom up.
+
+`ExcelDocument.Calculate()` uses OfficeIMO's own lightweight formula engine. It supports `SUM`, and it writes the results into the cached values.
 
 ### Telerik
 
@@ -314,10 +332,11 @@ The row count is controlled by `EditData.MaxRows`.
 | NPOI        |      ✅      |     ✅ `XSSFSheet.ShiftColumns()`    |            ✅           |         ✅         |
 | MiniExcel   |      ❌      |                  ❌                  |            ❌           | — not benchmarked |
 | XLibur      |      ✅      | ✅ `IXLColumn.InsertColumnsBefore()` |            ✅           |         ✅         |
+| OfficeIMO   |      ✅      |   ✅ `InsertColumns(first, count)`   |            ✅           |         ✅         |
 | IronXL      |      ✅      |   ✅ `InsertColumns(index, count)`   |            ✅           |         ✅         |
 | Telerik     |      ✅      |     ✅ `ColumnSelection.Insert()`    |            ✅           |         ✅         |
 
-All seven libraries produce the same **501-row × 23-column** workbook:
+All eight libraries produce the same **501-row × 23-column** workbook:
 
 * columns B and C = 10,
 * `SUM(A:T)` becomes `SUM(A:V)`,

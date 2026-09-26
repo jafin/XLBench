@@ -67,6 +67,7 @@ public static class LibraryNames
         var n when n.StartsWith("Npoi") => "NPOI",
         var n when n.StartsWith("MiniExcel") => "MiniExcel",
         var n when n.StartsWith("XLibur") => "XLibur",
+        var n when n.StartsWith("OfficeImo") => "OfficeIMO",
         var n when n.StartsWith("IronXl") => "IronXL",
         var n when n.StartsWith("Telerik") => "Telerik",
         _ => typeName,

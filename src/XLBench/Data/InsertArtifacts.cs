@@ -55,6 +55,7 @@ public static class InsertArtifacts
             ("NPOI", "npoi", NpoiInsertBenchmarks.WriteArtifact),
             ("OpenXML SDK", "openxml", OpenXmlInsertBenchmarks.WriteArtifact),
             ("XLibur", "xlibur", XLiburInsertBenchmarks.WriteArtifact),
+            ("OfficeIMO", "officeimo", OfficeImoInsertBenchmarks.WriteArtifact),
             ("Telerik", "telerik", TelerikInsertBenchmarks.WriteArtifact),
             ("IronXL", "ironxl", IronXlInsertBenchmarks.WriteArtifact),
         ];

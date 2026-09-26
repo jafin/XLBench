@@ -21,6 +21,7 @@ public static class LibraryVersions
         ("NPOI", VersionOf(typeof(NPOI.XSSF.UserModel.XSSFWorkbook))),
         ("MiniExcel", VersionOf(typeof(MiniExcelLibs.MiniExcel))),
             ("XLibur", VersionOf(typeof(XLibur.Excel.XLWorkbook))),
+            ("OfficeIMO", VersionOf(typeof(OfficeIMO.Excel.ExcelDocument))),
         ];
 
         // Telerik, like IronXL, is only "under test" when it is licensed — unlicensed it
