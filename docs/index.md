@@ -28,7 +28,7 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.1 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel) | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel) | 0.5.8 |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.620.0 |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.630.0 |
 | [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.4.3 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.9.2 |
 | [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.923 |

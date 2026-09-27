@@ -36,7 +36,7 @@
     <PackageReference Include="Sylvan.Data" Version="0.2.17" />
     <!-- XLibur meta-package. Pulls in XLibur + XLibur.Fonts.SkiaSharp.
          The font engine auto-registers on first use; no bootstrap call required. -->
-    <PackageReference Include="XLibur.Bundle" Version="0.620.0" />
+    <PackageReference Include="XLibur.Bundle" Version="0.630.0" />
     <!-- OfficeIMO builds on DocumentFormat.OpenXml, so it shares the SDK version pinned above. -->
     <PackageReference Include="OfficeIMO.Excel" Version="3.4.3" />
     <!-- RadSpreadProcessing. The cell model lives in Telerik.Documents.Spreadsheet; reading and
