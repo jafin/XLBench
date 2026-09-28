@@ -38,7 +38,7 @@
          The font engine auto-registers on first use; no bootstrap call required. -->
     <PackageReference Include="XLibur.Bundle" Version="0.630.0" />
     <!-- OfficeIMO builds on DocumentFormat.OpenXml, so it shares the SDK version pinned above. -->
-    <PackageReference Include="OfficeIMO.Excel" Version="3.4.3" />
+    <PackageReference Include="OfficeIMO.Excel" Version="3.4.4" />
     <!-- RadSpreadProcessing. The cell model lives in Telerik.Documents.Spreadsheet; reading and
          writing .xlsx needs the OpenXml format provider alongside it. Telerik.Documents.Core and
          Telerik.Licensing come in transitively. -->
