@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageReference Include="IronXL.Excel" Version="2026.9.2" />
+    <PackageReference Include="IronXL.Excel" Version="2026.10.1" />
     <!-- Transitive pin: overrides a vulnerable 10.0.7 pulled in by the Excel libraries. -->
     <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.12" />
   </ItemGroup>
@@ -38,7 +38,7 @@
          The font engine auto-registers on first use; no bootstrap call required. -->
     <PackageReference Include="XLibur.Bundle" Version="0.630.0" />
     <!-- OfficeIMO builds on DocumentFormat.OpenXml, so it shares the SDK version pinned above. -->
-    <PackageReference Include="OfficeIMO.Excel" Version="3.4.3" />
+    <PackageReference Include="OfficeIMO.Excel" Version="3.4.4" />
     <!-- RadSpreadProcessing. The cell model lives in Telerik.Documents.Spreadsheet; reading and
          writing .xlsx needs the OpenXml format provider alongside it. Telerik.Documents.Core and
          Telerik.Licensing come in transitively. -->
