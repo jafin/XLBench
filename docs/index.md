@@ -48,6 +48,9 @@ measured. See the [README](https://github.com/jafin/XLBench#libraries-under-test
   round trip on a smaller purpose-built 1,000 × 8 numeric sheet: open, set the document `Title`
   and `Category`, save back out. It uses the smaller workbook on purpose — at 750,000 cells the
   serialization would bury the part being measured.
+- **Read (multi-sheet)** — `OpenAndReadAllSheets` opens a 20-sheet workbook (501 × 12 per sheet)
+  whose cost is in the shared parts — about 39,000 unique shared strings, 8,600 of them rich text,
+  and about 2,400 cell formats — and reads every populated cell of every sheet.
 - **Write** — `CreateAndSave` builds a 50,000-row sheet (string / number / date columns
   plus a `SUM` total) and serializes it to a stream.
 - **Report** — `CreateStockReport` imports 20 tickers × 260 weekly closing prices from JSON
@@ -64,6 +67,14 @@ measured. See the [README](https://github.com/jafin/XLBench#libraries-under-test
   The new columns land *inside* the totalled range, so every `SUM(A:T)` has to come back as
   `SUM(A:V)` and take them in. Where the edit scenario re-points every formula 166 times, this is
   one structural edit with a single workbook-wide reference fixup — read the two together.
+- **Calc** — `ChangePricesAndRecalculate` opens a generated sales workbook (200 products, 1,000
+  orders with `VLOOKUP`, `INDEX`/`MATCH` and `IFERROR`, and a `SUMIFS`/`COUNTIFS` summary), raises
+  every price, recalculates and reads the grand total. Only libraries with their own calculation
+  engine take part.
+- **Template** — `FillTemplateAndSave` opens an Excel-authored sales-report template (named
+  cells, an Excel Table, validation, conditional formatting, a structured-reference summary block
+  and a chart), writes 2,000 rows into the table, grows it, and saves. The data is checked
+  pass/fail; what of the template survives is reported per library.
 
 ## Report scenario — capability matrix
 
@@ -115,6 +126,38 @@ less work, so read its timing against this table.
 
 All 500 row totals in every saved artifact are checked against the source CSV on each
 `dotnet run -- insert`, read out of the package XML rather than through a library.
+
+## Calc scenario — capability matrix
+
+| Library | Lookups + `IFERROR` | `SUMIFS` / `COUNTIFS` | Correct result |
+| --- | :-: | :-: | :-: |
+| ClosedXML | ✅ | ✅ | ✅ |
+| EPPlus | ✅ | ✅ | ✅ |
+| OpenXML SDK | ❌ | ❌ | ❌ (not benchmarked — no engine) |
+| NPOI | ✅ | ✅ | ✅ |
+| MiniExcel | ❌ | ❌ | ❌ (not benchmarked — no engine) |
+| Sylvan | ❌ | ❌ | ❌ (not benchmarked — no engine) |
+| XLibur | ✅ | ✅ | ✅ |
+| OfficeIMO | ⚠️ `INDEX` on error | ✅ | ❌ (not benchmarked — wrong results, ~20 s and ~45 GB per operation) |
+| IronXL | ? | ? | not yet verified |
+| Telerik | ❌ no `IFERROR` | ❌ | ❌ (not benchmarked) |
+
+## Template scenario — fidelity
+
+The data is the same in every saved file; what differs is how much of the template survives.
+
+| Library | Fill + grow table | Template features kept |
+| --- | :---: | --- |
+| ClosedXML | ✅ | ✅ all |
+| EPPlus | ✅ | ✅ all (validation/CF ranges grow) |
+| OpenXML SDK | ⚠️ hand-authored | ✅ all |
+| NPOI | ✅ | ⚠️ chart rewritten with schema errors |
+| MiniExcel | ❌ | ❌ (not benchmarked — `{{tag}}` templates only) |
+| Sylvan | ❌ | ❌ (not benchmarked) |
+| XLibur | ✅ | ✅ all |
+| OfficeIMO | ✅ | ⚠️ currency format lost on new rows |
+| IronXL | ⚠️ no table resize | not yet run |
+| Telerik | ❌ table dropped | ❌ structured refs become text |
 
 ## Caveats
 
