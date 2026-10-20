@@ -36,7 +36,7 @@ Done when every library row in both tables matches the csproj.
 ./scripts/run-benchmarks.ps1 -FullFidelity
 ```
 
-Start the run in the background. It takes over an hour, and you will be notified when it exits. With no `XLBENCH_IRONXL_KEY`, IronXL is replayed from `snapshots/ironxl.json` and marked ⧗. Its numbers then describe the snapshot's version, not the pinned one. Say so in the PR. If the key is set, commit the refreshed snapshot.
+Start the run in the background. It takes about 25 minutes on the maintainer's Ryzen 9 5950X, and you will be notified when it exits. With no `XLBENCH_IRONXL_KEY`, IronXL is replayed from `snapshots/ironxl.json` and marked ⧗. Its numbers then describe the snapshot's version, not the pinned one. Say so in the PR. If the key is set, commit the refreshed snapshot.
 
 Done when the run exits 0 and `docs/results.md` / `docs/results-data.js` carry today's timestamp. Then check convergence: any row whose Error is above ~5% of its Mean has not settled. List those rows in the PR as low-confidence.
 
@@ -46,7 +46,7 @@ Done when the run exits 0 and `docs/results.md` / `docs/results-data.js` carry t
 ./.claude/skills/bump-and-benchmark/compare-results.ps1
 ```
 
-It compares the new `docs/results-data.js` with the copy on `origin/main` (the last publish). It flags rows that moved by ≥10% in time (beyond the combined Error) or in allocation. `SIGNIFICANT` rows belong to libraries whose version changed. `drift` rows belong to unchanged libraries, and their size is the noise floor for this run. A `SIGNIFICANT` swing no larger than the drift is not attributable to the bump.
+It compares the new `docs/results-data.js` with the copy on `origin/main` (the last publish). It flags rows that moved by ≥10% in time (beyond the combined Error) or in allocation. `SIGNIFICANT` rows belong to libraries whose version changed. `drift` rows belong to unchanged libraries, and their size is the noise floor for this run. A `SIGNIFICANT` time swing no larger than the drift is not attributable to the bump. Allocation is close to deterministic, so an allocation swing on a bumped library is attributable even when time drifts. Also diff the environment block in `docs/results.md`: a .NET runtime or SDK change is a likely source of drift and belongs in the changelog.
 
 Done when every flagged row is classified as attributable, within drift, or snapshot.
 
@@ -59,6 +59,7 @@ Add an entry at the top of `CHANGELOG.md` at the repo root (create it with a `# 
 
 **Versions:** <Library old → new, …>. Held back: <package (reason)> or none.
 **Not measured:** <IronXL replayed from snapshot <version>, …> or none.
+**Environment:** <.NET runtime/SDK old → new, same host> or unchanged.
 
 ### Significant swings
 
@@ -66,7 +67,7 @@ Add an entry at the top of `CHANGELOG.md` at the repo root (create it with a `# 
 | --- | --- | --- | --- | --- |
 | EditAndRecalculate | XLibur | 0.630.0 → 0.630.1 | 10.94 → 8.13 ms (−26%) | 2.77 → 2.68 MB (−3%) |
 
-<One or two sentences on the drift seen in unchanged libraries, so readers can judge the table.>
+<The largest drift seen in unchanged libraries, then a short list of swings on bumped libraries that fall within it.>
 ```
 
 List only attributable swings in the table. If there are none, say so in one line.
