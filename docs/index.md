@@ -23,15 +23,15 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | Library | Package | Version |
 | --- | --- | --- |
 | [ClosedXML](https://github.com/ClosedXML/ClosedXML) | [`ClosedXML`](https://www.nuget.org/packages/ClosedXML) | 0.105.1 |
-| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.7.1 |
+| [EPPlus](https://github.com/EPPlusSoftware/EPPlus) | [`EPPlus`](https://www.nuget.org/packages/EPPlus) | 8.7.2 |
 | [OpenXML SDK](https://github.com/dotnet/Open-XML-SDK) | [`DocumentFormat.OpenXml`](https://www.nuget.org/packages/DocumentFormat.OpenXml) | 3.5.1 |
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.1 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel) | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel) | 0.5.8 |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.630.1-rc.18 |
-| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.4.4 |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.720.0 |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.5.1 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.10.1 |
-| [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.923 |
+| [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.1014 |
 
 Library links point at each project's source repository, except IronXL and Telerik, which are
 closed source — those go to their product pages.
