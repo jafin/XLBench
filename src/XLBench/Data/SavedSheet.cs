@@ -18,6 +18,12 @@ public static class SavedSheet
     private static readonly XNamespace Main =
         "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
 
+    private static readonly XNamespace Relationships =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+    private static readonly XNamespace PackageRelationships =
+        "http://schemas.openxmlformats.org/package/2006/relationships";
+
     /// <summary>One cell as the file stores it.</summary>
     /// <param name="Formula">Formula text without the leading '=', or null for a literal cell.</param>
     /// <param name="RawValue">Cached value exactly as written, or null when the cell has none.</param>
@@ -50,6 +56,54 @@ public static class SavedSheet
                         .FirstOrDefault()
                     ?? throw new InvalidOperationException($"'{path}' contains no worksheet part.");
 
+        return ReadColumn(path, entry, column);
+    }
+
+    /// <summary>
+    /// Reads <paramref name="column"/> from the worksheet named <paramref name="sheetName"/>, keyed
+    /// by 1-based sheet row. The part is found the way a reader has to find it — the sheet's
+    /// relationship id in <c>xl/workbook.xml</c>, resolved through
+    /// <c>xl/_rels/workbook.xml.rels</c> — since libraries number their worksheet parts as they like.
+    /// </summary>
+    /// <param name="path">Path to a saved .xlsx.</param>
+    /// <param name="column">1-based column index.</param>
+    /// <param name="sheetName">The worksheet's name as shown on its tab.</param>
+    public static Dictionary<int, Cell> ReadColumn(string path, int column, string sheetName)
+    {
+        using var zip = ZipFile.OpenRead(path);
+
+        var relationshipId = LoadEntry(zip, "xl/workbook.xml", path)
+                                 .Root?.Element(Main + "sheets")?.Elements(Main + "sheet")
+                                 .FirstOrDefault(s => string.Equals(
+                                     (string?)s.Attribute("name"), sheetName, StringComparison.OrdinalIgnoreCase))
+                                 ?.Attribute(Relationships + "id")?.Value
+                             ?? throw new InvalidOperationException($"'{path}' has no sheet named '{sheetName}'.");
+
+        var target = LoadEntry(zip, "xl/_rels/workbook.xml.rels", path)
+                         .Root?.Elements(PackageRelationships + "Relationship")
+                         .FirstOrDefault(r => (string?)r.Attribute("Id") == relationshipId)
+                         ?.Attribute("Target")?.Value
+                     ?? throw new InvalidOperationException(
+                         $"'{path}' has no relationship '{relationshipId}' for sheet '{sheetName}'.");
+
+        // Targets are normally relative to xl/ ("worksheets/sheet2.xml") but may be absolute ("/xl/…").
+        var entryName = target.StartsWith('/') ? target.TrimStart('/') : $"xl/{target}";
+        var entry = zip.GetEntry(entryName)
+                    ?? throw new InvalidOperationException($"'{path}' is missing part '{entryName}'.");
+
+        return ReadColumn(path, entry, column);
+    }
+
+    private static XDocument LoadEntry(ZipArchive zip, string name, string path)
+    {
+        var entry = zip.GetEntry(name)
+                    ?? throw new InvalidOperationException($"'{path}' is missing part '{name}'.");
+        using var stream = entry.Open();
+        return XDocument.Load(stream);
+    }
+
+    private static Dictionary<int, Cell> ReadColumn(string path, ZipArchiveEntry entry, int column)
+    {
         using var stream = entry.Open();
         var doc = XDocument.Load(stream);
 

@@ -48,6 +48,32 @@ if (args is [{ } insertCmd, ..] && insertCmd.Equals("insert", StringComparison.O
     return;
 }
 
+// `dotnet run -- calc` does the same for the calc scenario, checking every recalculated order and
+// summary cell in the saved file against values computed directly from the generated inputs.
+if (args is [{ } calcCmd, ..] && calcCmd.Equals("calc", StringComparison.OrdinalIgnoreCase))
+{
+    CalcArtifacts.WriteAll();
+    return;
+}
+
+// `dotnet run -- template` does the same for the template scenario, then reports what of the
+// Excel-authored template survived: the data is checked pass/fail, the template features
+// (chart, validation, conditional formatting, styles …) are reported as kept or lost.
+if (args is [{ } templateCmd, ..] && templateCmd.Equals("template", StringComparison.OrdinalIgnoreCase))
+{
+    TemplateArtifacts.WriteAll();
+    return;
+}
+
+// `dotnet run -- sheets` reads the multi-sheet workbook once with every library and checks each
+// library's cell count and text length against the generator's. A read saves nothing, so there
+// is no artifact; the check is the output.
+if (args is [{ } sheetsCmd, ..] && sheetsCmd.Equals("sheets", StringComparison.OrdinalIgnoreCase))
+{
+    SheetsArtifacts.WriteAll();
+    return;
+}
+
 var config = BenchmarkConfig.Create();
 
 // The report benchmarks save their workbook for manual review from [GlobalCleanup], which runs
@@ -284,10 +310,13 @@ namespace XLBench
         [
             ("OpenAmendPropertiesAndSave", "Read · open + set properties + save"),
             ("OpenAndReadAll", "Read · open + read all cells"),
+            ("OpenAndReadAllSheets", "Read · 20 sheets, shared strings + styles"),
             ("CreateAndSave", "Write · create + save"),
             ("CreateStockReport", "Report · data + conditional formatting + chart"),
             ("EditAndRecalculate", "Edit · delete rows + set column + recalculate"),
             ("InsertColumnsAndRecalculate", "Edit · insert 2 columns + recalculate"),
+            ("ChangePricesAndRecalculate", "Calc · change prices + recalculate lookups and SUMIFS"),
+            ("FillTemplateAndSave", "Template · fill Excel-authored template + save"),
         ];
 
         /// <summary>
