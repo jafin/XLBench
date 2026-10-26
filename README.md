@@ -72,6 +72,37 @@ Each library uses its normal API:
 
 Random `Cell(row, col)` access is avoided where it is not the library's normal usage pattern.
 
+#### `OpenAndReadAllSheets`
+
+Opens a workbook with **20 sheets × 501 rows × 12 columns** and reads every populated cell of every sheet.
+
+The grid is smaller than the main read workbook. The cost is in the workbook-level parts:
+
+* about 39,000 unique shared strings, with heavy reuse of a small hot set,
+* about 8,600 of those strings are rich text with 2–4 differently formatted runs,
+* about 2,400 cell formats built from fonts, fills, borders and number formats.
+
+Nine columns hold text. The other three hold a number, a date and a number.
+
+Libraries render numbers and dates differently, so the checksum uses only text. It combines the number of populated cells with the total length of the text cells' plain text. Rich text counts as its runs joined together.
+
+Each library uses its normal API for listing sheets:
+
+* ClosedXML/XLibur: `Worksheets` and `CellsUsed()`
+* EPPlus: `Workbook.Worksheets` and `Cells`
+* NPOI: the workbook's sheet enumerator, then rows
+* OfficeIMO: `Sheets` and `EnumerateCells()`
+* Telerik: `Worksheets`, then the used range by index
+* OpenXML SDK: every worksheet part, streamed
+* MiniExcel: `GetSheetNames()`, then one `Query` per sheet
+* Sylvan: one reader for the whole workbook, with `NextResult()` moving to the next sheet
+
+MiniExcel reopens the package for every sheet it queries. This is its API for reading a named sheet, so the cost is included.
+
+Telerik has no rich-text cell value. Rich text arrives as plain text.
+
+`dotnet run -- sheets` checks every library's cell count and text length against the generated data, and prints the shared-string and style counts from the package.
+
 ### Write
 
 #### `CreateAndSave`
@@ -168,6 +199,80 @@ This scenario complements Edit:
 * Insert performs one structural change across the workbook.
 
 `dotnet run -- insert` also verifies all 500 totals in the saved workbook by reading the OOXML directly.
+
+### Calc
+
+#### `ChangePricesAndRecalculate`
+
+Tests the formula engine itself.
+
+**Setup, not measured**
+
+A shared workbook is generated from a fixed seed. It has three sheets:
+
+* `Products`: 200 products with a category, a whole-dollar price and a discount rate.
+* `Orders`: 1,000 order lines. Each has five formulas:
+  * `IFERROR(VLOOKUP(…))` for the price,
+  * `IFERROR(INDEX(…, MATCH(…)), "Unknown")` for the category,
+  * gross, discount (`IF` + `VLOOKUP`) and `ROUND`ed net.
+* `Summary`: a category × region grid of `SUMIFS`, a `COUNTIFS` per category, totals, and `SUM`/`AVERAGE`/`MAX` statistics.
+
+Every 97th order names a product that does not exist, so its lookups must fail and be caught by `IFERROR`.
+
+The file is saved without cached values, so every library must evaluate every formula.
+
+**Measured**
+
+Each library:
+
+1. Opens the workbook.
+2. Raises every product's price by 3.
+3. Recalculates.
+4. Reads the grand total.
+
+The grand total depends on every order formula, so a lazy engine cannot skip work.
+
+`dotnet run -- calc` checks all 2,048 formula results in the saved workbook against values calculated directly in C#.
+
+To run only this scenario, filter with `--filter *CalcBenchmarks*`. The shorter `*Calc*` also matches `EditAndRecalculate` and `InsertColumnsAndRecalculate`.
+
+### Template
+
+#### `FillTemplateAndSave`
+
+Tests filling a workbook that a person built in Excel.
+
+The template is `src/XLBench/Data/sales_template.xlsx`. Excel itself wrote it (`dotnet run --project tools/TemplateGen`). No library under test produced it. It contains:
+
+* a merged title and two header cells, reached through the defined names `ReportTitle`, `ReportDate` and `Region`,
+* four named cell styles, and date and currency formats on the data columns,
+* an Excel Table `Sales` with a header row and one empty row,
+* list validation on the Category column and conditional formatting on the Amount column,
+* a summary block of `SUMIFS(Sales[Amount],Sales[Category],…)` structured references,
+* a column chart of that summary block.
+
+Each library:
+
+1. Opens the template.
+2. Writes the three named cells.
+3. Writes 2,000 sales rows into the table. Each Amount is an A1 formula such as `D6*E6`.
+4. Grows the table to `A5:F2005`.
+5. Saves to a stream.
+
+Saving is measured, because saving is part of the job.
+
+Nothing is recalculated. The structured references follow the table, and Excel recalculates them when the file is opened.
+
+The chart plots the summary block, not the table. A chart over the table stores a fixed A1 range, and no library extends it when the table grows.
+
+`dotnet run -- template` checks each saved file:
+
+* **Data** (pass/fail): the named cells, all 2,000 rows and the table range.
+* **Fidelity** (reported): the chart, validation, conditional formatting, merged title, defined names, named styles, summary formulas, and the column formats on the new rows.
+
+It also counts schema errors beyond the template's own.
+
+MiniExcel and Sylvan do not take part. MiniExcel fills templates through `{{placeholder}}` tags, which needs a different template. Sylvan cannot edit an existing workbook.
 
 Every benchmark uses `[MemoryDiagnoser]`, so results include allocations and Gen0/1/2 collections as well as time.
 
@@ -414,6 +519,105 @@ MiniExcel cannot edit an existing workbook in place, so it is excluded.
 
 Sylvan.Data.Excel cannot edit an existing workbook either, so it is excluded.
 
+## Calc scenario — capability matrix
+
+| Library     | Lookups + `IFERROR`  | `SUMIFS` / `COUNTIFS` |    Correct result   |
+| ----------- | :------------------: | :-------------------: | :-----------------: |
+| ClosedXML   |           ✅          |           ✅           |          ✅          |
+| EPPlus      |           ✅          |           ✅           |          ✅          |
+| OpenXML SDK |           ❌          |           ❌           | — not benchmarked   |
+| NPOI        |           ✅          |           ✅           |          ✅          |
+| MiniExcel   |           ❌          |           ❌           | — not benchmarked   |
+| Sylvan      |           ❌          |           ❌           | — not benchmarked   |
+| XLibur      |           ✅          |           ✅           |          ✅          |
+| OfficeIMO   | ⚠️ `INDEX` on error  |           ✅           | — excluded          |
+| IronXL      |           ?          |           ?           |   not yet verified  |
+| Telerik     |    ❌ no `IFERROR`    |           ❌           | — not benchmarked   |
+
+### OpenXML SDK, MiniExcel and Sylvan
+
+None of these has a calculation engine. The Edit scenario calculates totals in the benchmark for the OpenXML SDK. Here that would measure C# arithmetic, not an engine, so these libraries are excluded.
+
+### OfficeIMO
+
+OfficeIMO is excluded from this scenario for three reasons:
+
+* **Errors.** When `INDEX` receives an error, such as the `#N/A` from a `MATCH` that found nothing, OfficeIMO leaves the cell uncalculated instead of returning the error. `IFERROR` then has nothing to catch. The unknown-product orders get no category, and every `SUMIFS` and `COUNTIFS` that reads that column is left uncalculated too. 56 of the 2,048 results are missing, including the grand total.
+* **Speed.** One operation takes about 20 seconds, against about one second for the other engines.
+* **Memory.** One operation allocates about 45 GB.
+
+Each function in the workbook works on its own. The failure comes from how errors move between them.
+
+The benchmark code is kept in `Benchmarks/Calc/OfficeImoCalcBenchmarks.cs` with its `[Benchmark]` attribute commented out. To re-check OfficeIMO after a version bump, restore the attribute and its entry in `Data/CalcArtifacts.cs`.
+
+### Telerik
+
+RadSpreadProcessing has a calculation engine, but it does not include `IFERROR`, `SUMIFS` or `COUNTIFS`. Each evaluates to `#NAME?`.
+
+It cannot calculate this workbook, so it is excluded rather than timed producing errors.
+
+### ClosedXML
+
+As in the Insert scenario, the artifact is saved with `evaluateFormulae: true` so the file contains the calculated values. This is outside the measured benchmark.
+
+## Template scenario — capability matrix
+
+| Library     | Fill + grow table   | Chart kept    | Validation + CF kept | Structured refs kept | New rows formatted | Schema errors added |
+| ----------- | :-----------------: | :-----------: | :------------------: | :------------------: | :----------------: | :-----------------: |
+| ClosedXML   |          ✅          |       ✅       |           ✅          |           ✅          |          ✅         |          0          |
+| EPPlus      |          ✅          |       ✅       |    ✅ ranges grow     |           ✅          |          ✅         |          0          |
+| OpenXML SDK |      ⚠️ manual      |       ✅       |           ✅          |           ✅          |      ⚠️ manual     |          0          |
+| NPOI        |          ✅          | ⚠️ rewritten  |           ✅          |           ✅          |          ✅         |          10         |
+| MiniExcel   |          —          |       —       |           —          |           —          |          —         | — not benchmarked   |
+| Sylvan      |          —          |       —       |           —          |           —          |          —         | — not benchmarked   |
+| XLibur      |          ✅          |       ✅       |           ✅          |           ✅          |          ✅         |          0          |
+| OfficeIMO   |          ✅          |       ✅       |           ✅          |           ✅          |    ⚠️ dates only   |          0          |
+| IronXL      | ⚠️ no table resize  |       ?       |           ?          |           ?          |          ?         |          ?          |
+| Telerik     |  ❌ table dropped    |       ✅       |           ✅          |    ❌ become text     |          ✅         |          1          |
+
+Every runnable library writes the same 2,000 rows, formulas and named cells. Excel 16 opens every saved file.
+
+### EPPlus
+
+`ExcelTable.AddRow` inserts cells inside the table's own columns, so the summary block beside the table does not move.
+
+Like an insert in Excel, it also stretches ranges that span the insert. The validation and conditional formatting come back as `C6:C6999` and `F6:F6999`. They still cover every row.
+
+### OpenXML SDK
+
+The SDK has no table or cell model, so the benchmark does the work itself:
+
+* writes the rows into `sheetData` in column order, before the summary cells in rows 6–11,
+* gives each new cell its column's style index, because Excel applies a column style only to cells that do not exist,
+* rewrites the table and auto-filter ranges,
+* sets `fullCalcOnLoad`, so Excel replaces the stale summary results.
+
+### NPOI
+
+NPOI does not change the chart, but it parses the chart on load and writes it back on save.
+
+The title comes back as `<a:rich>` instead of `<c:rich>`. This is the same bug as in the report scenario. The chart part gets 10 schema errors. Excel still opens the file.
+
+### OfficeIMO
+
+New cells do not take their column's style.
+
+Dates still show as dates, because OfficeIMO applies its own date format. Prices and amounts lose the template's currency format.
+
+### Telerik
+
+RadSpreadProcessing has no Excel Table model. The `Sales` table is dropped when the template is imported.
+
+The structured references in the summary block cannot be parsed. They are imported as text cells that look like the formulas. The totals and the chart are therefore empty in the saved file.
+
+The chart, validation, conditional formatting, merged title and named styles survive.
+
+### IronXL
+
+IronXL can read and add a named table but cannot resize one. The table therefore stays at the template's `A5:F6`.
+
+This benchmark has not yet run against a licence key.
+
 ## IronXL — licence-gated and snapshotted
 
 IronXL is implemented for all benchmark scenarios, but only runs when `XLBENCH_IRONXL_KEY` contains a valid licence key.
@@ -561,11 +765,12 @@ It could be added to the existing snapshot system later if required.
 
 ## Reviewable output
 
-The report, edit and insert scenarios also save their workbooks:
+The report, edit, insert, calc and template scenarios also save their workbooks:
 
 * `output/stock-report-<library>.xlsx`
 * `output/numbers-edited-<library>.xlsx`
 * `output/numbers-inserted-<library>.xlsx`
+* `output/sales-template-<library>.xlsx`
 
 These files are git-ignored and overwritten on the next run.
 
@@ -573,6 +778,9 @@ These files are git-ignored and overwritten on the next run.
 dotnet run -c Release --project src/XLBench -- report
 dotnet run -c Release --project src/XLBench -- edit
 dotnet run -c Release --project src/XLBench -- insert
+dotnet run -c Release --project src/XLBench -- calc
+dotnet run -c Release --project src/XLBench -- template
+dotnet run -c Release --project src/XLBench -- sheets
 ```
 
 These commands generate the workbooks without running BenchmarkDotNet.
@@ -592,6 +800,14 @@ It also checks that every formula has been widened correctly.
 The validation reads the raw OOXML using `Data/SavedSheet.cs` instead of reopening the workbook through the library that created it.
 
 This avoids a library recalculating the formula while being used to validate its own output.
+
+### Template validation
+
+`dotnet run -- template` checks the data in each saved file and reports which template features survived. See the Template scenario above.
+
+### Multi-sheet read validation
+
+`dotnet run -- sheets` reads the multi-sheet workbook once with every library and checks its cell count and text length. A read saves no file, so this command writes nothing to `output/`.
 
 ### Saving benchmark artifacts
 

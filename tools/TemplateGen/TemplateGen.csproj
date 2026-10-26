@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    One-off authoring tool: drives a locally installed Excel over COM to produce
+    src/XLBench/Data/sales_template.xlsx, the workbook the Template scenario fills.
+    Windows only, and needs desktop Excel. No package references — Excel is reached through
+    late-bound IDispatch (`dynamic`), not an interop assembly. TargetFramework/Nullable/
+    ImplicitUsings are inherited from the repo-root Directory.Build.props.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+</Project>
