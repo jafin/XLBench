@@ -14,8 +14,7 @@ window.XLBENCH_DATA = {
   },
   "commercial": [
     "Telerik",
-    "IronXL",
-    "NPOI"
+    "IronXL"
   ],
   "snapshots": {
     "IronXL": "2026.8.1, Job-HTCPYF, captured 2026-08-03"
