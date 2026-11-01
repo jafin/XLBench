@@ -5,6 +5,21 @@ Significant performance swings between published full-fidelity runs. A swing is 
 as caused by a version bump only when it is larger than the drift seen in libraries whose version
 did not change in the same run.
 
+## 2026-11-01 — OfficeIMO 3.5.3, Telerik 2026.3.1027, XLibur 0.730.0
+
+**Versions:** OfficeIMO 3.5.1 → 3.5.3, Telerik 2026.3.1014 → 2026.3.1027, XLibur 0.720.0 → 0.730.0.
+Held back: IronXL at 2026.10.1. 2026.11.1 needs SixLabors.Fonts ≥ 3.2, and ClosedXML 0.105.1 needs a
+version below 3.0, so the packages cannot be restored together.
+**Not measured:** IronXL is replayed from the 2026.8.1 snapshot (no licence key).
+**Environment:** unchanged, same host.
+
+### Significant swings
+
+None attributable to the bumps. The only flagged row on a bumped library is Telerik
+`InsertColumnsAndRecalculate`, +10% in time (182.91 → 201.91 ms) and +0.2% in allocation. That is
+inside the drift in unchanged libraries: EPPlus +15% on `OpenAndReadAll`, NPOI −20% and OpenXML SDK
++11% on `InsertColumnsAndRecalculate`. OfficeIMO and XLibur showed no flagged swings.
+
 ## 2026-10-20 — XLibur 0.720.0, EPPlus 8.7.2, OfficeIMO 3.5.1, Telerik 2026.3.1014
 
 **Versions:** XLibur 0.630.1-rc.18 → 0.720.0, EPPlus 8.7.1 → 8.7.2, OfficeIMO 3.4.4 → 3.5.1,
