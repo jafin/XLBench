@@ -11,11 +11,11 @@ ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, Sylvan, XLibur, OfficeIMO, Iron
 </p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
-libraries, all consumed via NuGet and run on **.NET 10** with
+libraries, run on **.NET 10** with
 [BenchmarkDotNet](https://benchmarkdotnet.org/).
 
-## 📊 [Latest results (tables + static charts) →](results.md)
 ## 📈 [Interactive charts →](charts.html)
+## 📊 [Latest results (tables + static charts) →](results.md)
 ## 🤖 [CI results (indicative) →](results-ci.md)
 
 ## Libraries under test
@@ -28,10 +28,10 @@ libraries, all consumed via NuGet and run on **.NET 10** with
 | [NPOI](https://github.com/nissl-lab/npoi) | [`NPOI`](https://www.nuget.org/packages/NPOI) | 2.8.1 |
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel) | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel) | 0.5.8 |
-| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.720.0 |
-| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.5.1 |
+| [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.730.0 |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.5.3 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.10.1 |
-| [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.1014 |
+| [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.1027 |
 
 Library links point at each project's source repository, except IronXL and Telerik, which are
 closed source — those go to their product pages.
