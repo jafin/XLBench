@@ -784,6 +784,8 @@ namespace XLBench
             {
                 updated = DateTime.Now.ToString("u", CultureInfo.InvariantCulture),
                 versions,
+                // Libraries classed as commercial; drives the charts page's group toggle.
+                commercial = LibraryVersions.Commercial,
                 // Library -> provenance, for the libraries whose points were carried over from a
                 // previous run rather than measured in this one.
                 snapshots,

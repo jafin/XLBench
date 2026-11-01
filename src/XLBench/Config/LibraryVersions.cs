@@ -38,6 +38,12 @@ public static class LibraryVersions
         return libraries;
     }
 
+    /// <summary>
+    /// Libraries classed as commercial. Emitted into <c>results-data.js</c> (as <c>commercial</c>) so the
+    /// interactive charts can offer a one-click group toggle without hard-coding names in the page.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Commercial = ["Telerik", "IronXL", "NPOI"];
+
     public static string For(string library) =>
         All.FirstOrDefault(x => x.Library == library).Version ?? string.Empty;
 
