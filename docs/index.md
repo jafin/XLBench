@@ -11,7 +11,7 @@ ClosedXML, EPPlus, OpenXML SDK, NPOI, MiniExcel, Sylvan, XLibur, OfficeIMO, Iron
 </p>
 
 Independent read/write **performance and memory** benchmarks comparing popular .NET Excel
-libraries, all consumed via NuGet and run on **.NET 10** with
+libraries, run on **.NET 10** with
 [BenchmarkDotNet](https://benchmarkdotnet.org/).
 
 ## 📈 [Interactive charts →](charts.html)
