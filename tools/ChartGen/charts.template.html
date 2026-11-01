@@ -84,6 +84,20 @@
   .legend span{display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--text-secondary);}
   .swatch{width:11px; height:11px; border-radius:3px; box-shadow:0 0 0 1px var(--border) inset;}
 
+  /* library toggles: the legend doubles as the filter */
+  .legend.libs{align-items:center; gap:6px 8px;}
+  .legend .chip{appearance:none; display:inline-flex; align-items:center; gap:7px; font:inherit; font-size:13px; font-weight:550;
+    color:var(--text-primary); background:var(--surface); border:1px solid var(--border); border-radius:999px;
+    padding:4px 12px 4px 10px; cursor:pointer;}
+  .legend .chip:hover{border-color:var(--baseline);}
+  .legend .chip:focus-visible, .legend .link-btn:focus-visible{outline:2px solid var(--link); outline-offset:2px;}
+  .legend .chip[aria-pressed="false"]{color:var(--muted); background:transparent; text-decoration:line-through;}
+  .legend .chip[aria-pressed="false"] .swatch{background:transparent !important; box-shadow:0 0 0 1.5px var(--baseline) inset;}
+  .legend .lead{font-size:12.5px; color:var(--muted); margin-right:2px;}
+  .legend .link-btn{appearance:none; border:0; background:transparent; color:var(--link); font:inherit; font-size:12.5px; cursor:pointer; padding:4px 6px;}
+  .legend .link-btn:hover{text-decoration:underline;}
+  .legend .link-btn[hidden]{display:none;}
+
   .panels{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
   @media (max-width:900px){ .panels{grid-template-columns:1fr;} }
   .panel{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 16px 14px;}
@@ -190,9 +204,9 @@
     </div>
   </header>
 
-  <p class="hint" id="hint">Bars are sorted best → worst within each operation, each panel on its own scale. <span id="hintErr">The faint whisker marks the benchmark <b>error</b> (99.9% CI). </span>Hover any bar for detail.</p>
+  <p class="hint" id="hint">Bars are sorted best → worst within each operation, each panel on its own scale. <span id="hintErr">The faint whisker marks the benchmark <b>error</b> (99.9% CI). </span>Hover any bar for detail. Click a library below to hide or show it; every chart rescales to the libraries still shown.</p>
 
-  <div class="legend" id="legend"></div>
+  <div class="legend libs" id="legend" role="group" aria-label="Libraries shown"></div>
   <div class="panels" id="panels"></div>
   <div id="tableView"></div>
   <div id="heatView"></div>
@@ -267,19 +281,26 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   });
 
   // Flatten scenarios into per-measurement rows.
-  const DATA = [];
+  // ALL_DATA holds every measurement; DATA is the subset for libraries currently toggled on,
+  // and is what every view reads (refresh() re-derives it).
+  const ALL_DATA = [];
   let hasErr = false;
   PAYLOAD.scenarios.forEach(s=>{
     s.libraries.forEach((lib,i)=>{
       const terr = s.errorMs ? s.errorMs[i] : null;
       const tsd  = s.stdDevMs ? s.stdDevMs[i] : null;
       if(terr != null) hasErr = true;
-      DATA.push({ lib, op:s.key,
+      ALL_DATA.push({ lib, op:s.key,
         time: s.timeMs ? s.timeMs[i] : null,
         mem:  s.allocMb ? s.allocMb[i] : null,
         terr, tsd });
     });
   });
+  const ACTIVE = new Set(LIBS);
+  // Libraries the payload classes as commercial (payload.commercial) — nothing is hard-coded here.
+  const COMMERCIAL = (PAYLOAD.commercial || []).filter(l=>LIBS.includes(l));
+  let DATA = ALL_DATA;
+  const activeLibs = () => LIBS.filter(l=>ACTIVE.has(l));
   if(!hasErr) document.getElementById('hintErr').style.display = 'none';
 
   let measure = 'time';
@@ -291,9 +312,44 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   const fmtVal = v => v==null ? '—' : (measure==='time' ? fmtMs(v) : fmtMB(v));
   const nOK = v => typeof v==='number' && !isNaN(v);
 
+  // Built once (so keyboard focus survives a toggle); syncLegend() updates the pressed state.
   function buildLegend(){
-    document.getElementById('legend').innerHTML =
-      LIBS.map(l=>`<span><i class="swatch" style="background:${COLORS[l]}"></i>${labelOf(l)}</span>`).join('');
+    const el = document.getElementById('legend');
+    el.innerHTML = `<span class="lead">Libraries:</span>`
+      + LIBS.map(l=>`<button type="button" class="chip" data-lib="${esc(l)}" aria-pressed="true"><i class="swatch" style="background:${COLORS[l]}"></i>${esc(labelOf(l))}</button>`).join('')
+      + (COMMERCIAL.length ? `<button type="button" class="link-btn group" id="grpCommercial" title="Show or hide all commercial libraries: ${esc(COMMERCIAL.join(', '))}">Commercial: <b></b></button>` : '')
+      + `<button type="button" class="link-btn" id="showAll" hidden>Show all</button>`;
+    el.addEventListener('click', e=>{
+      if(e.target.closest('#showAll')){ LIBS.forEach(l=>ACTIVE.add(l)); return refresh(); }
+      if(e.target.closest('#grpCommercial')){
+        if(COMMERCIAL.some(l=>ACTIVE.has(l))){
+          // hide the group, but never leave nothing shown
+          const keep = [...ACTIVE].filter(l=>!COMMERCIAL.includes(l));
+          if(!keep.length) return;
+          COMMERCIAL.forEach(l=>ACTIVE.delete(l));
+        } else COMMERCIAL.forEach(l=>ACTIVE.add(l));
+        return refresh();
+      }
+      const b = e.target.closest('.chip'); if(!b) return;
+      const lib = b.dataset.lib;
+      if(ACTIVE.has(lib)){ if(ACTIVE.size<=1) return; ACTIVE.delete(lib); }   // always keep one library
+      else ACTIVE.add(lib);
+      refresh();
+    });
+  }
+  function syncLegend(){
+    document.querySelectorAll('#legend .chip').forEach(b=>{
+      const on = ACTIVE.has(b.dataset.lib);
+      b.setAttribute('aria-pressed', on);
+      b.title = on ? (ACTIVE.size<=1 ? 'At least one library must stay shown' : 'Click to hide') : 'Click to show';
+    });
+    const g = document.getElementById('grpCommercial');
+    if(g){
+      const n = COMMERCIAL.filter(l=>ACTIVE.has(l)).length;
+      g.querySelector('b').textContent = n===0 ? 'hidden' : n===COMMERCIAL.length ? 'shown' : `${n}/${COMMERCIAL.length} shown`;
+      g.title = (n===0 ? 'Show' : 'Hide') + ' all commercial libraries: ' + COMMERCIAL.join(', ');
+    }
+    document.getElementById('showAll').hidden = ACTIVE.size===LIBS.length;
   }
 
   const tip = document.getElementById('tip');
@@ -376,7 +432,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       // Libraries with no result here could not run this benchmark (the feature is missing, or
       // the API cannot express it). Show them anyway, always last, so an absence reads as a
       // result rather than an omission.
-      LIBS.filter(l=>!rows.some(d=>d.lib===l)).forEach(lib=>{
+      activeLibs().filter(l=>!rows.some(d=>d.lib===l)).forEach(lib=>{
         const row = document.createElement('div');
         row.className = 'row incomplete';
         row.innerHTML =
@@ -504,7 +560,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       const vs = DATA.filter(d=>d.op===op.key && nOK(d[f]) && d[f]>0).map(d=>d[f]);
       return { ...op, ...OP_STYLE[op.key], best: vs.length ? Math.min(...vs) : null };
     }).filter(op=>op.best!=null);
-    const rows = LIBS.map(lib=>{
+    const rows = activeLibs().map(lib=>{
       const pts = ops.map(op=>{
         const d = DATA.find(x=>x.lib===lib && x.op===op.key);
         return d && nOK(d[f]) && d[f]>0 ? { op, v:d[f], ratio:d[f]/op.best } : { op, v:null, ratio:null };
@@ -518,7 +574,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
     const partial = rows.filter(r=>!r.complete).sort((a,b)=>b.done-a.done || a.gm-b.gm);
     return { m, ...DOT_MEASURES[m], ops, ranked, partial };
   }
-  const DOT_MODELS = { time: dotModel('time'), mem: dotModel('mem') };
+  let DOT_MODELS = { time: dotModel('time'), mem: dotModel('mem') };
   let dotMeasure = DOT_MODELS.time.ops.length ? 'time' : 'mem';
   const dm = () => DOT_MODELS[dotMeasure];
   const shapeSvg = (op, size=14) =>
@@ -679,8 +735,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
     document.getElementById('heatView').style.display  = view==='heat'   ? 'block' : 'none';
     document.getElementById('footnote').style.display  = view==='heat'   ? 'none' : 'block';
     document.getElementById('hint').style.display      = view==='charts' ? 'block' : 'none';
-    document.getElementById('dotSection').style.display = view==='charts' && dm().ops.length ? 'block' : 'none';
-    if(view==='charts' && dm().ops.length) buildDotPlot();
+    syncDot();
     heatBtn.setAttribute('aria-pressed', view==='heat');
     tableBtn.setAttribute('aria-pressed', view==='table');
     heatBtn.textContent  = view==='heat'  ? 'Charts' : 'Heat table';
@@ -703,23 +758,32 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
   if(matchMedia('(prefers-color-scheme: dark)').matches
      && document.documentElement.getAttribute('data-theme')!=='light'){ themeBtn.textContent='Light'; }
 
-  buildLegend(); buildPanels(); buildTable(); buildHeatTable(); setFootnote();
-  if(dm().ops.length){
-    document.getElementById('dotSection').style.display = 'block';
-    const dBtns = { time: document.getElementById('dTime'), mem: document.getElementById('dMem') };
-    const switchDot = m => {
-      dotMeasure = m;
-      Object.entries(dBtns).forEach(([k,b])=> b.setAttribute('aria-pressed', k===m));
-      buildDotText(); buildDotTable(); buildDotPlot();
-    };
+  const dBtns = { time: document.getElementById('dTime'), mem: document.getElementById('dMem') };
+  // Rebuild the overall dot plot section for the current dotMeasure.
+  function syncDot(){
     Object.entries(dBtns).forEach(([k,b])=>{
-      if(!DOT_MODELS[k].ops.length) b.disabled = true;   // no data for this measure at all
-      b.addEventListener('click', ()=>switchDot(k));
+      b.setAttribute('aria-pressed', k===dotMeasure);
+      b.disabled = !DOT_MODELS[k].ops.length;   // no data for this measure among the shown libraries
     });
-    switchDot(dotMeasure);
-    let rz = 0;
-    addEventListener('resize', ()=>{ cancelAnimationFrame(rz); rz = requestAnimationFrame(()=>{ if(view==='charts') buildDotPlot(); }); });
+    const has = dm().ops.length > 0;
+    document.getElementById('dotSection').style.display = view==='charts' && has ? 'block' : 'none';
+    if(!has) return;
+    buildDotText(); buildDotTable();
+    if(view==='charts') buildDotPlot();
   }
+  Object.entries(dBtns).forEach(([k,b])=> b.addEventListener('click', ()=>{ dotMeasure = k; syncDot(); }));
+
+  // Re-derive everything from the libraries currently toggled on.
+  function refresh(){
+    DATA = ALL_DATA.filter(d=>ACTIVE.has(d.lib));
+    DOT_MODELS = { time: dotModel('time'), mem: dotModel('mem') };
+    if(!dm().ops.length) dotMeasure = dotMeasure==='time' ? 'mem' : 'time';
+    syncLegend(); buildPanels(); buildTable(); buildHeatTable(); setFootnote(); syncDot();
+  }
+
+  buildLegend(); refresh();
+  let rz = 0;
+  addEventListener('resize', ()=>{ cancelAnimationFrame(rz); rz = requestAnimationFrame(()=>{ if(view==='charts' && dm().ops.length) buildDotPlot(); }); });
 })();
 </script>
 </body>
