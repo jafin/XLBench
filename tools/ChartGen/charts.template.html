@@ -179,6 +179,39 @@
   #tip .tt-line .tt-k{display:inline-flex; align-items:center; gap:6px;}
   #tip .tt-line .tt-k svg{flex:none; overflow:visible;}
 
+  /* head-to-head: two libraries, operation by operation, as diverging bars around 1x */
+  #h2hSection{margin-top:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 16px 14px;}
+  #h2hSection h2{font-size:15px; font-weight:600; margin:0; letter-spacing:-0.01em;}
+  #h2hSection .sub{font-size:13px; margin:4px 0 12px;}
+  #h2hSection .pick{display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; margin:0 0 14px;}
+  #h2hSection .pick .vs{font-size:12.5px; font-weight:650; color:var(--muted);}
+  #h2hSection select{font:inherit; font-size:13px; font-weight:550; padding:6px 10px; border-radius:8px;
+    border:1px solid var(--border); background:var(--surface); color:var(--text-primary);}
+  #h2hSection select:focus-visible, #h2hSection .icon-btn:focus-visible{outline:2px solid var(--link); outline-offset:2px;}
+  .h2h-sum{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 0 16px;}
+  @media (max-width:760px){ .h2h-sum{grid-template-columns:1fr;} }
+  .h2h-sum .tile{border:1px solid var(--border); border-radius:10px; padding:10px 14px; background:var(--page);}
+  .h2h-sum .k{font-size:11.5px; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  .h2h-sum .big{font-size:19px; font-weight:650; letter-spacing:-0.01em; margin:2px 0;}
+  .h2h-sum .small{font-size:12.5px; color:var(--text-secondary);}
+  .h2h-grid{display:grid; grid-template-columns:minmax(150px,1.1fr) 2fr 2fr; gap:6px 18px; align-items:center;}
+  @media (max-width:760px){ .h2h-grid{grid-template-columns:1fr 1fr;} .h2h-grid .op{grid-column:1 / -1; margin-top:8px;} .h2h-grid .h.first{display:none;} }
+  .h2h-grid .h{display:flex; justify-content:space-between; gap:8px; font-size:11.5px; font-weight:650; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--muted); padding-bottom:4px; border-bottom:1px solid var(--grid);}
+  .h2h-grid .op{font-size:13px; line-height:1.3;}
+  .h2h-grid .op i{display:block; font-style:normal; font-size:10.5px; font-weight:650; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  .h2h-div{position:relative; height:24px;}
+  .h2h-div::before{content:""; position:absolute; left:50%; top:-3px; bottom:-3px; width:1.5px; background:var(--baseline);}
+  .h2h-div .bar{position:absolute; top:3px; bottom:3px; border-radius:4px; min-width:2px;}
+  .h2h-div .lbl{position:absolute; top:50%; transform:translateY(-50%); font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .h2h-div .lbl.l{transform:translate(-100%,-50%);}
+  .h2h-div.na{background:repeating-linear-gradient(135deg, var(--track) 0 6px, transparent 6px 12px); border-radius:4px;}
+  .h2h-div.na span{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:10.5px; font-weight:650; letter-spacing:.06em; color:var(--muted); background:var(--surface); padding:0 6px;}
+  #h2hSection details{margin-top:12px; font-size:13px;}
+  #h2hSection summary{cursor:pointer; color:var(--text-secondary); font-size:12.5px;}
+  #h2hSection details .wrapx{overflow-x:auto;}
+  #h2hSection details table{margin-top:10px;}
+
   #empty{display:none; padding:48px 8px; color:var(--muted); font-size:14px;}
   #empty code{background:var(--track); padding:2px 6px; border-radius:5px;}
 </style>
@@ -225,6 +258,21 @@
     <div id="dotPlot"></div>
     <p class="note" id="dotNote"></p>
     <details><summary>Show as a table</summary><div class="wrapx" id="dotTable"></div></details>
+  </section>
+
+  <section id="h2hSection" style="display:none" aria-labelledby="h2hTitle">
+    <h2 id="h2hTitle">Head-to-head</h2>
+    <p class="sub">Pick two libraries and see how they compare on every operation. Each bar is the ratio between their results: it grows toward the library that is faster or leaner, so the longer the bar, the bigger the gap. This view always uses every library, whatever is toggled above.</p>
+    <div class="pick">
+      <select id="h2hA" aria-label="First library"></select>
+      <span class="vs">vs</span>
+      <select id="h2hB" aria-label="Second library"></select>
+      <button class="icon-btn" id="h2hSwap" type="button">Swap</button>
+    </div>
+    <div class="h2h-sum" id="h2hSum"></div>
+    <div class="h2h-grid" id="h2hGrid"></div>
+    <p class="note" id="h2hNote"></p>
+    <details><summary>Show as a table</summary><div class="wrapx" id="h2hTable"></div></details>
   </section>
 
   <div id="empty">No results yet. Run <code>scripts/run-benchmarks.ps1</code> to generate <code>results-data.js</code>.</div>
@@ -765,6 +813,7 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
       b.setAttribute('aria-pressed', k===dotMeasure);
       b.disabled = !DOT_MODELS[k].ops.length;   // no data for this measure among the shown libraries
     });
+    document.getElementById('h2hSection').style.display = view==='charts' ? 'block' : 'none';
     const has = dm().ops.length > 0;
     document.getElementById('dotSection').style.display = view==='charts' && has ? 'block' : 'none';
     if(!has) return;
@@ -781,7 +830,104 @@ const PAYLOAD = (/*__XLBENCH_DATA__*/ null) || (typeof window !== 'undefined' ? 
     syncLegend(); buildPanels(); buildTable(); buildHeatTable(); setFootnote(); syncDot();
   }
 
+  // ---- head-to-head ----
+  // Two libraries, one row per operation. For each measure the bar is the ratio of the two results,
+  // on a log scale around 1x at the centre: it grows toward whichever library is faster (or leaner).
+  // It reads ALL_DATA, so it ignores the library toggles above: the pair is chosen explicitly here.
+  const CELL = {};
+  ALL_DATA.forEach(d=>{ (CELL[d.op] = CELL[d.op] || {})[d.lib] = d; });
+  const H2H = {
+    time: { f:'time', fmt:fmtMsExact, word:'faster', name:'Speed' },
+    mem:  { f:'mem',  fmt:fmtExact('MB'), word:'leaner', name:'Memory' }
+  };
+  let h2hA = LIBS.includes('XLibur') ? 'XLibur' : LIBS[0];
+  let h2hB = LIBS.includes('ClosedXML') ? 'ClosedXML' : (LIBS.find(l=>l!==h2hA) || LIBS[0]);
+  const h2hSelA = document.getElementById('h2hA'), h2hSelB = document.getElementById('h2hB');
+
+  // r > 1 means A is better (B's value divided by A's); null when either library has no result.
+  function h2hRatio(op, f){
+    const a = (CELL[op.key]||{})[h2hA], b = (CELL[op.key]||{})[h2hB];
+    return a && b && nOK(a[f]) && a[f]>0 && nOK(b[f]) && b[f]>0 ? { r:b[f]/a[f], a:a[f], b:b[f] } : null;
+  }
+
+  function h2hSummary(m, rows){
+    const M = H2H[m], rs = rows.map(x=>x[m]).filter(Boolean);
+    if(!rs.length) return `<div class="tile"><div class="k">${M.name}</div><div class="big">—</div><div class="small">No operation that both libraries completed.</div></div>`;
+    const g = Math.exp(rs.reduce((s,x)=>s+Math.log(x.r),0)/rs.length);
+    const aWins = rs.filter(x=>x.r>1.005).length, bWins = rs.filter(x=>x.r<0.995).length, ties = rs.length-aWins-bWins;
+    const who = g>=1 ? h2hA : h2hB, mag = g>=1 ? g : 1/g;
+    const lead = mag<1.005 ? 'Level overall' : `<i class="swatch" style="background:${COLORS[who]}"></i> ${esc(labelOf(who))} ${fmtRatio(mag)} ${M.word}`;
+    return `<div class="tile"><div class="k">${M.name}</div><div class="big">${lead}</div>
+      <div class="small">Geometric mean over ${rs.length} operation${rs.length>1?'s':''}. ${esc(labelOf(h2hA))} ${M.word} in ${aWins}, ${esc(labelOf(h2hB))} in ${bWins}${ties?`, level in ${ties}`:''}.</div></div>`;
+  }
+
+  function h2hCell(x, m, maxLog){
+    if(!x) return `<div class="h2h-div na"><span>NO RESULT</span></div>`;
+    const aBetter = x.r>=1, mag = aBetter ? x.r : 1/x.r;
+    const frac = Math.min(Math.log(mag)/maxLog, 1)*36;          // leave room for the label inside the column
+    const color = COLORS[aBetter ? h2hA : h2hB];
+    const bar = aBetter ? `left:${50-frac}%;width:${frac}%` : `left:50%;width:${frac}%`;
+    const lbl = aBetter ? `class="lbl l" style="left:${50-frac}%;margin-left:-6px"` : `class="lbl" style="left:${50+frac}%;margin-left:6px"`;
+    const level = mag<1.005;
+    return `<div class="h2h-div" data-m="${m}">${level ? '' : `<span class="bar" style="${bar};background:${color}"></span>`}<span ${level ? 'class="lbl" style="left:50%;margin-left:6px"' : lbl}>${level ? 'level' : fmtRatio(mag)}</span></div>`;
+  }
+
+  function buildH2H(){
+    const rows = OPS.map(op=>({ op, time:h2hRatio(op,'time'), mem:h2hRatio(op,'mem') }));
+    const maxLog = f => Math.max(0.1, ...rows.map(r=>r[f] ? Math.abs(Math.log(r[f].r)) : 0));
+    const mx = { time:maxLog('time'), mem:maxLog('mem') };
+    const nA = esc(labelOf(h2hA)), nB = esc(labelOf(h2hB));
+    const sw = l => `<i class="swatch" style="background:${COLORS[l]}"></i>`;
+
+    document.getElementById('h2hSum').innerHTML = h2hSummary('time', rows) + h2hSummary('mem', rows);
+    document.getElementById('h2hGrid').innerHTML =
+      `<div class="h first">Operation</div>`
+      + ['time','mem'].map(m=>`<div class="h"><span>◀ ${sw(h2hA)}${nA} ${H2H[m].word}</span><span>${nB} ${sw(h2hB)} ${H2H[m].word} ▶</span></div>`).join('')
+      + rows.map(r=>`<div class="op"><i>${esc(r.op.tag)}</i>${esc(r.op.title)}</div>${h2hCell(r.time,'time',mx.time)}${h2hCell(r.mem,'mem',mx.mem)}`).join('');
+
+    // Tooltip on each bar: both libraries' actual values.
+    document.querySelectorAll('#h2hGrid .h2h-div').forEach((el,i)=>{
+      const r = rows[Math.floor(i/2)], m = i%2===0 ? 'time' : 'mem', x = r[m], M = H2H[m];
+      el.addEventListener('mousemove', e=>{
+        const line = (lib,v)=>`<div class="tt-line"><span class="tt-k">${sw(lib)}${esc(labelOf(lib))}</span><b>${v==null?'no result':M.fmt(v)}</b></div>`;
+        const cA = (CELL[r.op.key]||{})[h2hA], cB = (CELL[r.op.key]||{})[h2hB];
+        tip.innerHTML = `<div class="tt-head">${esc(r.op.title)}</div><div class="tt-op">${esc(r.op.tag)} · ${M.name}</div>`
+          + line(h2hA, cA && nOK(cA[M.f]) ? cA[M.f] : null) + line(h2hB, cB && nOK(cB[M.f]) ? cB[M.f] : null)
+          + (x ? `<div class="tt-line"><span>Ratio</span><b>${fmtRatio(x.r>=1?x.r:1/x.r)} for ${esc(labelOf(x.r>=1?h2hA:h2hB))}</b></div>` : '');
+        tip.style.opacity = 1;
+        const pad=14, w=tip.offsetWidth, h=tip.offsetHeight;
+        let tx=e.clientX+pad, ty=e.clientY+pad;
+        if(tx+w>innerWidth-8) tx=e.clientX-w-pad;
+        if(ty+h>innerHeight-8) ty=e.clientY-h-pad;
+        tip.style.left=tx+'px'; tip.style.top=ty+'px';
+      });
+      el.addEventListener('mouseleave', ()=>{ tip.style.opacity=0; });
+    });
+
+    const snaps = [h2hA,h2hB].filter(isSnap);
+    document.getElementById('h2hNote').innerHTML =
+      'A ratio is the larger result divided by the smaller, so 3× means three times as slow (or as heavy). Ratios come from the exact means and allocations, not rounded figures.'
+      + (snaps.length ? ` <b>${MARK}</b> ${snaps.map(esc).join(' and ')} ${snaps.length>1?'were':'was'} carried over from an earlier run, possibly on other hardware, so treat time comparisons with care.` : '');
+
+    const cellTxt = (x, M) => x ? `${M.fmt(x.a)} vs ${M.fmt(x.b)} · ${fmtRatio(x.r>=1?x.r:1/x.r)} for ${esc(labelOf(x.r>=1?h2hA:h2hB))}` : '—';
+    document.getElementById('h2hTable').innerHTML =
+      `<table><caption>${nA} vs ${nB}: each library's result, and the multiple by which one is ahead.</caption>
+        <thead><tr><th>Operation</th><th>Mean time</th><th>Allocated</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td style="text-align:left">${esc(r.op.title)}</td><td>${cellTxt(r.time,H2H.time)}</td><td>${cellTxt(r.mem,H2H.mem)}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  function initH2H(){
+    const opts = sel => LIBS.map(l=>`<option value="${esc(l)}"${l===sel?' selected':''}>${esc(labelOf(l))}</option>`).join('');
+    const sync = () => { h2hSelA.innerHTML = opts(h2hA); h2hSelB.innerHTML = opts(h2hB); buildH2H(); };
+    // Comparing a library with itself says nothing, so choosing the same one moves the other.
+    h2hSelA.addEventListener('change', ()=>{ h2hA = h2hSelA.value; if(h2hA===h2hB) h2hB = LIBS.find(l=>l!==h2hA); sync(); });
+    h2hSelB.addEventListener('change', ()=>{ h2hB = h2hSelB.value; if(h2hB===h2hA) h2hA = LIBS.find(l=>l!==h2hB); sync(); });
+    document.getElementById('h2hSwap').addEventListener('click', ()=>{ [h2hA,h2hB] = [h2hB,h2hA]; sync(); });
+    sync();
+  }
+
   buildLegend(); refresh();
+  if(LIBS.length>=2) initH2H();
   let rz = 0;
   addEventListener('resize', ()=>{ cancelAnimationFrame(rz); rz = requestAnimationFrame(()=>{ if(view==='charts' && dm().ops.length) buildDotPlot(); }); });
 })();
