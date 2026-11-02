@@ -5,6 +5,25 @@ Significant performance swings between published full-fidelity runs. A swing is 
 as caused by a version bump only when it is larger than the drift seen in libraries whose version
 did not change in the same run.
 
+## 2026-11-02 — XLibur 0.800.0
+
+**Versions:** XLibur 0.730.0 → 0.800.0. IronXL is pinned at 2026.11.1 in its new project (see #54); it is
+not part of these numbers. Held back: none.
+**Not measured:** IronXL is replayed from the 2026.8.1 snapshot (no licence key).
+**Environment:** unchanged, same host (.NET 10.0.14).
+
+### Significant swings
+
+| Scenario | Library | Version | Time | Allocated |
+| --- | --- | --- | --- | --- |
+| OpenAndReadAllSheets | XLibur | 0.730.0 → 0.800.0 | 906.04 → 419.44 ms (−54%) | 830.44 → 177.16 MB (−79%) |
+| ChangePricesAndRecalculate | XLibur | 0.730.0 → 0.800.0 | 56.54 → 55.44 ms (−2%) | 11.97 → 10.76 MB (−10%) |
+
+The largest drift in unchanged libraries was +17.9% in time (NPOI, InsertColumnsAndRecalculate) and
+−15.6% (EPPlus, OpenAndReadAll). Allocation in unchanged libraries moved by at most 2.9%. The
+OpenAndReadAllSheets time and allocation swings are well beyond that drift, so they come from the bump.
+The ChangePricesAndRecalculate time change is within drift; only its allocation change is attributable.
+
 ## 2026-11-01 — OfficeIMO 3.5.3, Telerik 2026.3.1027, XLibur 0.730.0
 
 **Versions:** OfficeIMO 3.5.1 → 3.5.3, Telerik 2026.3.1014 → 2026.3.1027, XLibur 0.720.0 → 0.730.0.
