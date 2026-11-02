@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Dark mode follows data-theme on <html>, exactly like the current page. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* The page's existing design tokens, exposed to Tailwind as utilities (bg-page, text-muted, border-line, ...). */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --baseline: #c3c2b7; --line: rgba(11, 11, 11, 0.10);
+  --track: #efeee9; --heat-hot: #154a8c; --link: #0969da;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --s6: #008300; --s7: #4a3aa7; --s8: #e34948; --s9: #8a5a2b; --s10: #5f7f99;
+  /* one colour per operation, used by the dot plot */
+  --op1: #2a78d6; --op2: #eb6834; --op3: #1baf7a; --op4: #eda100; --op5: #e87ba4; --op6: #4a3aa7;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --baseline: #383835; --line: rgba(255, 255, 255, 0.10);
+  --track: #232321; --heat-hot: #6da7ec; --link: #4493f8;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+  --s6: #008300; --s7: #9085e9; --s8: #e66767; --s9: #b8865a; --s10: #8fa9bf;
+  --op1: #3987e5; --op2: #d95926; --op3: #199e70; --op4: #c98500; --op5: #d55181; --op6: #9085e9;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-ink: var(--text-primary);
+  --color-ink2: var(--text-secondary);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-baseline: var(--baseline);
+  --color-line: var(--line);
+  --color-track: var(--track);
+  --color-link: var(--link);
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+.hatch {
+  background: repeating-linear-gradient(135deg, var(--track) 0 6px, transparent 6px 12px);
+  box-shadow: inset 0 0 0 1px var(--grid);
+}

@@ -5,7 +5,7 @@ version: 2
 
 updates:
   # NuGet packages — the Excel libraries under test plus BenchmarkDotNet and tooling.
-  # Directory "/" scans the whole repo, covering src/XLBench and tools/ChartGen.
+  # Directory "/" scans the whole repo for NuGet packages, covering src/XLBench and src/XLBench.IronXL.
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
@@ -21,6 +21,24 @@ updates:
       # PR so a potentially breaking update gets individual attention (and its own
       # benchmark comparison). Remove this group for one PR per package.
       nuget-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # The charts page's packages (pnpm; Dependabot reads the pnpm-lock.yaml under the npm ecosystem).
+  - package-ecosystem: "npm"
+    directory: "/tools/charts-app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+    groups:
+      # Minor and patch bumps share one PR; majors come separately so a breaking change gets its own review.
+      charts-minor-patch:
         update-types:
           - "minor"
           - "patch"

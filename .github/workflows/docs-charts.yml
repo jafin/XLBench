@@ -1,14 +1,14 @@
 name: docs charts
 
-# Regenerates the self-contained docs/charts.html from docs/results-data.js whenever a
-# maintainer commits fresh benchmark data. No benchmarks run here — this only bakes the
-# already-committed numbers into the interactive page, so it's fast and deterministic.
+# Rebuilds the self-contained docs/charts.html (the interactive charts page) whenever a maintainer commits
+# fresh benchmark data or changes the page's source. No benchmarks run here: this bakes the already-committed
+# numbers from docs/results-data.js into the page (tools/charts-app), so it is fast and deterministic.
 on:
   push:
     branches: [ main ]
     paths:
       - 'docs/results-data.js'
-      - 'tools/ChartGen/**'
+      - 'tools/charts-app/**'
   workflow_dispatch:
 
 # Needed so the job can commit the regenerated page back to main.
@@ -23,18 +23,33 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/charts-app
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v6
+      # The pnpm version comes from "packageManager" in tools/charts-app/package.json.
+      - uses: pnpm/action-setup@v6
         with:
-          dotnet-version: '10.0.x'
+          package_json_file: tools/charts-app/package.json
 
-      - name: Generate docs/charts.html
-        run: dotnet run --project tools/ChartGen -c Release
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: tools/charts-app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Type-checks, then builds docs/charts.html from docs/results-data.js.
+      - name: Build docs/charts.html
+        run: pnpm build
 
       - name: Commit regenerated page
+        working-directory: .
         run: |
           if git diff --quiet -- docs/charts.html; then
             echo "charts.html unchanged — nothing to commit."

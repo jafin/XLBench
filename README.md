@@ -1057,6 +1057,7 @@ src/XLBench.IronXL/              # IronXL benchmarks, in a separate project (see
   Libraries/IronXlLicense.cs
   Benchmarks/*/IronXl*           # one class per scenario
 
+tools/charts-app/                 # the interactive charts page (Preact + TypeScript), built to docs/charts.html
 docs/                            # GitHub Pages content
 snapshots/                       # saved results for licence-gated libraries
 scripts/run-benchmarks.ps1       # run benchmarks and publish results

@@ -33,3 +33,41 @@ jobs:
       # It produces no trustworthy numbers (published results come from local runs).
       - name: Smoke-run write benchmarks (Dry)
         run: dotnet run -c Release --project src/XLBench --no-build -- --filter '*Write*' --job Dry
+
+  # The interactive charts page (tools/charts-app). docs-charts.yml builds and commits it after a merge;
+  # this job makes sure a change to the page, or to results-data.js, still type-checks and builds first.
+  charts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/charts-app
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: tools/charts-app/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: tools/charts-app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the page
+        run: pnpm build
+
+      # The build writes into docs/, which holds the whole site, so check it touched only charts.html.
+      - name: Check the build only wrote docs/charts.html
+        working-directory: .
+        run: |
+          other=$(git status --porcelain --untracked-files=all -- docs | grep -v ' docs/charts.html$' || true)
+          if [ -n "$other" ]; then
+            echo "The charts build changed files other than docs/charts.html:"
+            echo "$other"
+            exit 1
+          fi
