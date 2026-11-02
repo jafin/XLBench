@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
+#if !XLBENCH_IRONXL
 using ClosedXML.Excel;
+#endif
 
 namespace XLBench.Data;
 
@@ -180,7 +182,11 @@ public static class CalcData
     /// <summary>What a correct engine must produce once the prices have been raised.</summary>
     public static readonly CalcExpected Expected;
 
+#if XLBENCH_IRONXL
+    private static readonly Lazy<byte[]> LazySourceXlsx = new(() => PregeneratedInputs.Load("calc"), isThreadSafe: true);
+#else
     private static readonly Lazy<byte[]> LazySourceXlsx = new(BuildSourceXlsx, isThreadSafe: true);
+#endif
 
     /// <summary>Canonical .xlsx bytes every <c>ChangePricesAndRecalculate</c> benchmark opens.</summary>
     public static byte[] SourceXlsx => LazySourceXlsx.Value;
@@ -267,6 +273,7 @@ public static class CalcData
 
     public static string CountIfsFormula(int row) => $"COUNTIFS({OrderColumn(OrderCategoryCol)},$A{row})";
 
+#if !XLBENCH_IRONXL
     private static byte[] BuildSourceXlsx()
     {
         using var workbook = new XLWorkbook();
@@ -340,6 +347,7 @@ public static class CalcData
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+#endif
 }
 
 /// <summary>

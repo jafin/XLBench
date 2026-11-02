@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
+#if !XLBENCH_IRONXL
 using ClosedXML.Excel;
+#endif
 
 namespace XLBench.Data;
 
@@ -52,7 +54,11 @@ public static class PropertiesData
     /// <summary>The category the measured step adds to the workbook's document properties.</summary>
     public const string Category = "Benchmark";
 
+#if XLBENCH_IRONXL
+    private static readonly Lazy<byte[]> LazySourceXlsx = new(() => PregeneratedInputs.Load("properties"), isThreadSafe: true);
+#else
     private static readonly Lazy<byte[]> LazySourceXlsx = new(BuildSourceXlsx, isThreadSafe: true);
+#endif
 
     /// <summary>Canonical .xlsx bytes every <c>OpenAmendPropertiesAndSave</c> benchmark opens.</summary>
     public static byte[] SourceXlsx => LazySourceXlsx.Value;
@@ -67,6 +73,7 @@ public static class PropertiesData
         _ = SourceXlsx;
     }
 
+#if !XLBENCH_IRONXL
     private static byte[] BuildSourceXlsx()
     {
         using var workbook = new XLWorkbook();
@@ -99,4 +106,5 @@ public static class PropertiesData
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+#endif
 }

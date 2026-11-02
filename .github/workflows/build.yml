@@ -24,6 +24,11 @@ jobs:
       - name: Build (Release)
         run: dotnet build src/XLBench/XLBench.csproj -c Release
 
+      # IronXL has its own project (its dependencies cannot restore alongside ClosedXML's).
+      # It needs a licence key to run, so CI only proves it still compiles.
+      - name: Build IronXL project (Release)
+        run: dotnet build src/XLBench.IronXL/XLBench.IronXL.csproj -c Release
+
       # Validation only: a Dry run proves every benchmark still compiles and executes.
       # It produces no trustworthy numbers (published results come from local runs).
       - name: Smoke-run write benchmarks (Dry)

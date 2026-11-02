@@ -53,15 +53,7 @@ public static class SheetsArtifacts
             ("XLibur", XLiburSheetsBenchmarks.Read),
             ("OfficeIMO", OfficeImoSheetsBenchmarks.Read),
             ("Telerik", TelerikSheetsBenchmarks.Read),
-            ("IronXL", IronXlSheetsBenchmarks.Read),
         ];
-
-        // IronXL throws rather than watermarking when unlicensed (see IronXlLicense).
-        if (!IronXlLicense.KeyAvailable)
-        {
-            readers = [.. readers.Where(r => r.Library != "IronXL")];
-            Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
-        }
 
         // An unlicensed Telerik is excluded from the benchmarks (see TelerikLicense), so it is
         // left out here too, to keep the two lists the same.

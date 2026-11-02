@@ -49,16 +49,7 @@ public static class EditArtifacts
             ("XLibur", XLiburEditBenchmarks.WriteArtifact),
             ("OfficeIMO", OfficeImoEditBenchmarks.WriteArtifact),
             ("Telerik", TelerikEditBenchmarks.WriteArtifact),
-            ("IronXL", IronXlEditBenchmarks.WriteArtifact),
         ];
-
-        // IronXL throws rather than watermarking when unlicensed (see IronXlLicense). Skipping it
-        // with one line beats a stack trace in the middle of an otherwise clean run.
-        if (!IronXlLicense.KeyAvailable)
-        {
-            writers = [.. writers.Where(w => w.Library != "IronXL")];
-            Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
-        }
 
         // Telerik watermarks its output when unlicensed (see TelerikLicense).
         if (!TelerikLicense.IsLicensed)

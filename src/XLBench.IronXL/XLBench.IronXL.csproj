@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    IronXL is measured in its own project because it cannot share a package graph with the rest
+    of the suite. IronXL 2026.11.1 needs SixLabors.Fonts >= 3.2.0 (via IronSoftware.System.Drawing
+    and SixLabors.ImageSharp.Drawing), while ClosedXML 0.105.1 caps it below 3.0. NuGet resolves one
+    version per project, so restore fails with NU1107 when both are referenced together.
+
+    The scenarios, datasets and table layout come from src/XLBench by linking its source (below),
+    so both projects stay in step. This project never references ClosedXML; the input workbooks
+    ClosedXML generates are written to inputs/ by the main project's "inputs" command
+    and loaded from there (XLBENCH_IRONXL compiles that variant of the Data classes).
+
+    Results reach the published tables through snapshots/ironxl.json: this project writes it,
+    and the main run replays it, marked as carried over.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>XLBench.IronXL</AssemblyName>
+    <RootNamespace>XLBench</RootNamespace>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <DefineConstants>$(DefineConstants);XLBENCH_IRONXL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Shared scenario data and result helpers. The *Artifacts classes cross-check every
+         library and so reference all of them; they stay in the main project. -->
+    <Compile Include="..\XLBench\Data\*.cs" Exclude="..\XLBench\Data\*Artifacts.cs" LinkBase="Data" />
+    <Compile Include="..\XLBench\Config\BenchmarkConfigCore.cs" LinkBase="Config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\XLBench\Data\stock_data.json" LogicalName="XLBench.Data.stock_data.json" />
+    <EmbeddedResource Include="..\XLBench\Data\numbers.csv" LogicalName="XLBench.Data.numbers.csv" />
+    <EmbeddedResource Include="..\XLBench\Data\sales_template.xlsx" LogicalName="XLBench.Data.sales_template.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="IronXL.Excel" Version="2026.11.1" />
+    <!-- Transitive pin: overrides a vulnerable 10.0.7 pulled in by the Excel libraries. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.14" />
+  </ItemGroup>
+
+</Project>

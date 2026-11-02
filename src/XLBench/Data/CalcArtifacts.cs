@@ -54,16 +54,7 @@ public static class CalcArtifacts
             ("XLibur", "xlibur", XLiburCalcBenchmarks.WriteArtifact),
             // Excluded, like its [Benchmark] — see OfficeImoCalcBenchmarks. Uncomment to re-check it.
             // ("OfficeIMO", "officeimo", OfficeImoCalcBenchmarks.WriteArtifact),
-            ("IronXL", "ironxl", IronXlCalcBenchmarks.WriteArtifact),
         ];
-
-        // IronXL throws rather than watermarking when unlicensed (see IronXlLicense). Skipping it
-        // with one line beats a stack trace in the middle of an otherwise clean run.
-        if (!IronXlLicense.KeyAvailable)
-        {
-            writers = [.. writers.Where(w => w.Library != "IronXL")];
-            Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
-        }
 
         var written = 0;
         var skipped = 0;

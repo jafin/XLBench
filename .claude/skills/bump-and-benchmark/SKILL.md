@@ -18,15 +18,18 @@ Done when the branch sits on `origin/main` with only the carried-over changes.
 ```powershell
 ./scripts/update-libraries.ps1 -Apply
 dotnet build -c Release src/XLBench
+dotnet build -c Release src/XLBench.IronXL
 ```
 
-A bump can break NuGet restore with `NU1107` when a library's new transitive dependency falls outside another library's declared range. Example: IronXL 2026.10.5 needs SixLabors.Fonts ≥ 3.2, and ClosedXML 0.105.1 caps it below 3.0. Hold the bumped library at its previous version. Pinning the transitive package outside a library's range lets the restore pass but can break that library at runtime, which corrupts its numbers. Note every held-back package for the PR and changelog.
+IronXL lives in its own project, `src/XLBench.IronXL`, so its dependencies cannot clash with the other libraries'. The script updates both project files.
+
+A bump can break NuGet restore with `NU1107` when a library's new transitive dependency falls outside another library's declared range. Example: IronXL 2026.11.1 needs SixLabors.Fonts ≥ 3.2, and ClosedXML 0.105.1 caps it below 3.0. IronXL is isolated in `src/XLBench.IronXL` for this reason, so that pair no longer conflicts. If two libraries in `src/XLBench` conflict, hold the bumped library at its previous version, or move it to its own project the way IronXL was. Pinning the transitive package outside a library's range lets the restore pass but can break that library at runtime, which corrupts its numbers. Note every held-back package for the PR and changelog.
 
 Done when the Release build has 0 errors and every package is either bumped or recorded as held back with its reason.
 
 ## 3. Update the version tables
 
-The version tables in `README.md` and `docs/index.md` (both under "Libraries under test") are maintained by hand. Set each row to the version now in `XLBench.csproj`. The other `docs/` files are generated: `results.md` and `results-data.js` by the run, `charts.html` by the `docs-charts` workflow after merge, and `results-ci.md` by CI. Leave them to their generators.
+The version tables in `README.md` and `docs/index.md` (both under "Libraries under test") are maintained by hand. Set each row to the version now in `XLBench.csproj` (IronXL: `XLBench.IronXL.csproj`). The other `docs/` files are generated: `results.md` and `results-data.js` by the run, `charts.html` by the `docs-charts` workflow after merge, and `results-ci.md` by CI. Leave them to their generators.
 
 Done when every library row in both tables matches the csproj.
 

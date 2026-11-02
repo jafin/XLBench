@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+#if !XLBENCH_IRONXL
 using ClosedXML.Excel;
+#endif
 
 namespace XLBench.Data;
 
@@ -108,6 +110,7 @@ public static class SheetsData
     private static readonly string[] DateFormats = ["yyyy-mm-dd", "dd mmm yyyy", "d/m/yy", "mmm-yy"];
     private static readonly string[] RateFormats = ["0.00%", "0.0%", "0.000", "0.00E+00"];
 
+#if !XLBENCH_IRONXL
     private static readonly XLColor[] FontColors =
     [
         XLColor.Black, XLColor.DarkBlue, XLColor.DarkRed, XLColor.DarkGreen, XLColor.Purple, XLColor.SaddleBrown,
@@ -124,8 +127,13 @@ public static class SheetsData
         XLBorderStyleValues.None, XLBorderStyleValues.Thin, XLBorderStyleValues.Dotted,
         XLBorderStyleValues.Dashed, XLBorderStyleValues.Medium,
     ];
+#endif
 
+#if XLBENCH_IRONXL
+    private static readonly Lazy<(byte[] Bytes, long Checksum)> LazyWorkbook = new(() => (PregeneratedInputs.Load("sheets"), PregeneratedInputs.LoadChecksum("sheets")), isThreadSafe: true);
+#else
     private static readonly Lazy<(byte[] Bytes, long Checksum)> LazyWorkbook = new(Build, isThreadSafe: true);
+#endif
 
     /// <summary>Canonical .xlsx bytes every <c>OpenAndReadAllSheets</c> benchmark opens.</summary>
     public static byte[] SourceXlsx => LazyWorkbook.Value.Bytes;
@@ -156,6 +164,7 @@ public static class SheetsData
     public static (long Cells, long TextChars) Split(long checksum) =>
         (checksum / CellCountRadix, checksum % CellCountRadix);
 
+#if !XLBENCH_IRONXL
     private static (byte[] Bytes, long Checksum) Build()
     {
 #pragma warning disable S2245 // Deterministic seed is intentional for reproducible benchmarks
@@ -305,4 +314,5 @@ public static class SheetsData
         }
         return [.. phrases];
     }
+#endif
 }

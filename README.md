@@ -20,12 +20,12 @@ Libraries are installed from NuGet and tested on **.NET 10** using [BenchmarkDot
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel)                               | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel)                                                                                                                                              | 0.5.8      | Streaming `DbDataReader` / `DbDataWriter`                                                      | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [XLibur](https://github.com/XLibur/XLibur)                                             | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle)                                                                                                                                                      | 0.730.0    | Includes and registers the SkiaSharp font engine                                               | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [OfficeIMO](https://github.com/EvotecIT/OfficeIMO)                                     | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel)                                                                                                                                                  | 3.5.3      | Built on the OpenXML SDK; own lightweight formula engine                                       | [MIT](https://licenses.nuget.org/MIT)                                                                  |
-| [IronXL](https://ironsoftware.com/csharp/excel/)                                       | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel)                                                                                                                                                        | 2026.10.1  | **Commercial.** Requires a licence key. Without one, saved benchmark results are used instead. | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/)                                   |
+| [IronXL](https://ironsoftware.com/csharp/excel/)                                       | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel)                                                                                                                                                        | 2026.11.1  | **Commercial.** Requires a licence key. Without one, saved benchmark results are used instead. | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/)                                   |
 | [Telerik](https://www.telerik.com/document-processing-libraries) (RadSpreadProcessing) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) + [`.FormatProviders.OpenXml`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet.FormatProviders.OpenXml) | 2026.3.1027 | **Commercial.** Unlicensed workbooks get a licence worksheet instead of failing.               | [Proprietary EULA](https://www.telerik.com/purchase/license-agreement/document-processing-libraries) ᶜ |
 
 Library links point to source repositories where available. IronXL and Telerik are closed source, so their links go to product pages.
 
-Versions are pinned in `src/XLBench/XLBench.csproj`. Generated results also show the exact package versions loaded at runtime.
+Versions are pinned in `src/XLBench/XLBench.csproj`, except IronXL, which is pinned in `src/XLBench.IronXL/XLBench.IronXL.csproj`. Generated results also show the exact package versions loaded at runtime.
 
 Licences are taken from the pinned packages themselves, not from third-party package indexes.
 
@@ -622,6 +622,18 @@ This benchmark has not yet run against a licence key.
 
 IronXL is implemented for all benchmark scenarios, but only runs when `XLBENCH_IRONXL_KEY` contains a valid licence key.
 
+### Why IronXL has its own project
+
+IronXL lives in `src/XLBench.IronXL/`, not in `src/XLBench/`. It cannot share a package graph with the rest of the suite: IronXL 2026.11.1 needs SixLabors.Fonts 3.2 or newer, while ClosedXML 0.105.1 allows only versions below 3.0. NuGet picks one version per project, so referencing both fails restore with `NU1107`.
+
+Two projects avoid the clash:
+
+* `src/XLBench.IronXL` compiles the shared data and config from `src/XLBench` (linked source), so both projects run the same scenarios and print the same table layout. It never references ClosedXML.
+* The scenario input workbooks are generated with ClosedXML, so `dotnet run --project src/XLBench -- inputs` writes them to `inputs/` (git-ignored) and the IronXL project loads those exact bytes.
+* The IronXL project writes `snapshots/ironxl.json`. The main project replays it into the tables and charts.
+
+The IronXL project has no artifact-check commands (`edit`, `report`, and so on); the main project's commands skip IronXL. Its benchmarks still save their review workbooks to `output/` from `[GlobalCleanup]`.
+
 Without a key, XLBench uses the committed results in:
 
 `snapshots/ironxl.json`
@@ -630,7 +642,7 @@ This keeps IronXL visible in the comparison without requiring every contributor 
 
 ### How snapshots work
 
-A run **with** a valid key measures IronXL and updates `snapshots/ironxl.json`.
+A run **with** a valid key measures IronXL (in `src/XLBench.IronXL`) and updates `snapshots/ironxl.json`.
 
 The snapshot stores:
 
@@ -642,7 +654,7 @@ The snapshot stores:
 * job,
 * capture time.
 
-A run **without** a key skips IronXL and inserts the saved results into the generated tables and charts.
+The main project never measures IronXL. It inserts the saved results into the generated tables and charts.
 
 Snapshot values are marked **⧗**.
 
@@ -659,6 +671,14 @@ Chart values are stored separately in milliseconds.
 # Refresh the IronXL snapshot.
 $env:XLBENCH_IRONXL_KEY = 'IRONXL.YOURCOMPANY.IRO######.####'
 ./scripts/run-benchmarks.ps1
+```
+
+With a key, the script generates `inputs/`, runs `src/XLBench.IronXL`, and then runs the main project, which replays the fresh snapshot. To run the steps by hand:
+
+```pwsh
+dotnet run -c Release --project src/XLBench -- inputs
+dotnet run -c Release --project src/XLBench.IronXL -- --filter '*Read*'
+dotnet run -c Release --project src/XLBench
 ```
 
 Afterwards, commit both `docs/` and `snapshots/ironxl.json`.
@@ -1019,8 +1039,10 @@ src/XLBench/
   Data/SavedSheet.cs             # reads saved cells directly from OOXML
   Data/LibrarySnapshot.cs        # saved results for licence-gated libraries
 
+  Data/PregeneratedInputs.cs     # scenario workbooks handed to XLBench.IronXL via inputs/
+  Data/SnapshotRecorder.cs       # writes snapshots (used by XLBench.IronXL)
+
   Libraries/EpPlusLicense.cs
-  Libraries/IronXlLicense.cs
   Libraries/TelerikLicense.cs
   Libraries/TelerikWorkbooks.cs
 
@@ -1029,6 +1051,11 @@ src/XLBench/
   Benchmarks/Report/*
   Benchmarks/Edit/*
   Benchmarks/Insert/*
+
+src/XLBench.IronXL/              # IronXL benchmarks, in a separate project (see above)
+  Program.cs                     # runs the benchmarks and writes snapshots/ironxl.json
+  Libraries/IronXlLicense.cs
+  Benchmarks/*/IronXl*           # one class per scenario
 
 docs/                            # GitHub Pages content
 snapshots/                       # saved results for licence-gated libraries

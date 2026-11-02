@@ -1,4 +1,6 @@
+#if !XLBENCH_IRONXL
 using ClosedXML.Excel;
+#endif
 
 namespace XLBench.Data;
 
@@ -35,7 +37,11 @@ public static class TestData
     public const int ReadColCount = 15;
     public const int WriteRowCount = 50_000;
 
+#if XLBENCH_IRONXL
+    private static readonly Lazy<byte[]> LazyReadXlsx = new(() => PregeneratedInputs.Load("read"), isThreadSafe: true);
+#else
     private static readonly Lazy<byte[]> LazyReadXlsx = new(BuildReadXlsx, isThreadSafe: true);
+#endif
 
     /// <summary>Canonical .xlsx bytes shared by every read benchmark.</summary>
     public static byte[] ReadXlsx => LazyReadXlsx.Value;
@@ -59,6 +65,7 @@ public static class TestData
         }
     }
 
+#if !XLBENCH_IRONXL
     private static byte[] BuildReadXlsx()
     {
         using var workbook = new XLWorkbook();
@@ -106,4 +113,5 @@ public static class TestData
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+#endif
 }
