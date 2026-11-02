@@ -1,0 +1,34 @@
+{
+  "name": "xlbench-charts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The interactive charts page for the XLBench docs site. Builds to one self-contained docs/charts.html.",
+  "packageManager": "pnpm@10.18.2",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "data": "node scripts/prepare-data.mjs",
+    "dev": "pnpm data && vite",
+    "typecheck": "pnpm data && tsc --noEmit",
+    "build": "pnpm data && tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.46",
+    "@tanstack/react-table": "^9.3.1",
+    "preact": "^11.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-singlefile": "^2.3.4"
+  }
+}
