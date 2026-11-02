@@ -51,9 +51,12 @@
         dotnet run -c Release --project src/XLBench -- report
         dotnet run -c Release --project src/XLBench -- edit
 
-    IronXL is commercial and is skipped unless $env:XLBENCH_IRONXL_KEY holds a licence key.
-    A run that has one refreshes snapshots/ironxl.json; runs without one replay that snapshot
-    into the results, marked with the carried-over symbol. Commit the refreshed snapshot.
+    IronXL is commercial and is only measured when $env:XLBENCH_IRONXL_KEY holds a licence key.
+    It runs from its own project, src/XLBench.IronXL, because its dependencies cannot restore
+    alongside ClosedXML's (NU1107 on SixLabors.Fonts). That project reads the scenario inputs
+    from inputs/, which this script has the main project generate first. A run that has a key
+    refreshes snapshots/ironxl.json; runs without one replay that snapshot into the results,
+    marked with the carried-over symbol. Commit the refreshed snapshot.
 
 .EXAMPLE
     ./scripts/run-benchmarks.ps1
@@ -96,6 +99,19 @@ try {
             '--maxWarmupCount', $MaxWarmupCount,
             '--minIterationCount', $MinIterationCount,
             '--maxIterationCount', $MaxIterationCount)
+    }
+
+    # IronXL is measured by its own project (it cannot share a package graph with ClosedXML) and
+    # goes first, so the snapshot it writes is the one the main run replays into the tables.
+    if ($env:XLBENCH_IRONXL_KEY) {
+        Write-Host 'Measuring IronXL (XLBench.IronXL)...' -ForegroundColor Cyan
+        dotnet run -c Release --project src/XLBench -- inputs
+        if ($LASTEXITCODE -ne 0) { throw 'Generating the scenario inputs failed.' }
+        dotnet run -c Release --project src/XLBench.IronXL -- @runArgs
+        if ($LASTEXITCODE -ne 0) { throw 'The IronXL run failed.' }
+    }
+    else {
+        Write-Host 'XLBENCH_IRONXL_KEY not set: IronXL is replayed from snapshots/ironxl.json.' -ForegroundColor DarkYellow
     }
 
     Write-Host "Running: dotnet run -c Release --project src/XLBench -- $($runArgs -join ' ')" -ForegroundColor Cyan

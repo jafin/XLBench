@@ -9,7 +9,7 @@ namespace XLBench.Data;
 /// </summary>
 /// <remarks>
 /// IronXL is commercial and throws without a licence key (see
-/// <see cref="XLBench.Libraries.IronXlLicense"/>), so most runs cannot measure it. Rather than
+/// <c>IronXlLicense</c> in the XLBench.IronXL project), so most runs cannot measure it. Rather than
 /// dropping it from the comparison entirely, a run that <em>does</em> have a key writes its
 /// IronXL results to <c>snapshots/ironxl.json</c>, and later keyless runs fold that snapshot
 /// back into the published tables and charts, clearly marked as carried over.
@@ -130,7 +130,7 @@ public sealed class LibrarySnapshot
         return string.Join(", ", parts);
     }
 
-    private static string RepoRootOrCurrent()
+    internal static string RepoRootOrCurrent()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {

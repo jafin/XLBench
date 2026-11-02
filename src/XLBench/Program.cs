@@ -74,6 +74,15 @@ if (args is [{ } sheetsCmd, ..] && sheetsCmd.Equals("sheets", StringComparison.O
     return;
 }
 
+// `dotnet run -- inputs` writes the generated scenario workbooks to inputs/ and exits. The
+// XLBench.IronXL project cannot build them itself (it cannot reference ClosedXML), so it loads
+// these files instead. See PregeneratedInputs.
+if (args is [{ } inputsCmd, ..] && inputsCmd.Equals("inputs", StringComparison.OrdinalIgnoreCase))
+{
+    PregeneratedInputs.WriteAll();
+    return;
+}
+
 var config = BenchmarkConfig.Create();
 
 // The report benchmarks save their workbook for manual review from [GlobalCleanup], which runs
@@ -207,7 +216,7 @@ namespace XLBench
                 writer.WriteLine();
                 writer.WriteLine("Each results table (one per test method) is heat-mapped independently on the Pages site (🟩 best → 🟥 worst).");
                 writer.WriteLine();
-                writer.Write(BuildSnapshotNotice(scenarios, HostOf(summaryList)));
+                writer.Write(BuildSnapshotNotice(scenarios, SnapshotRecorder.HostOf(summaryList)));
                 writer.Write(BuildVersionsTable());
                 writer.Write(BuildMermaidSection(scenarios));
                 writer.WriteLine("## Detailed results");
@@ -357,10 +366,9 @@ namespace XLBench
             // from it, so the comparison stays complete across runs that lack a licence key.
             foreach (var library in SnapshotLibraries)
             {
-                if (rows.Any(r => r.Library == library))
-                    SaveSnapshot(library, summaries, rows.Where(r => r.Library == library));
-                else
-                    rows.AddRange(RestoreSnapshot(library));
+                // IronXL is measured by the separate XLBench.IronXL project, which writes its own
+                // snapshot (see SnapshotRecorder); this process only ever replays it.
+                rows.AddRange(RestoreSnapshot(library));
             }
 
             var scenarios = new List<Scenario>();
@@ -401,88 +409,6 @@ namespace XLBench
         /// <summary>Snapshot entries in play for this publish, so the tables can replay their rows.</summary>
         private static readonly Dictionary<(string Library, string Method), LibrarySnapshot.SnapshotEntry> SnapshotRows = [];
 
-        private static void SaveSnapshot(
-            string library,
-            IEnumerable<Summary> summaries,
-            IEnumerable<(string Library, string Method, double? TimeMs, double? AllocMb, double? ErrorMs, double? StdDevMs, string? SnapshotOf)> measured)
-        {
-            var summaryList = summaries.ToList();
-            var host = HostOf(summaryList);
-            var job = summaryList
-                .SelectMany(s => s.BenchmarksCases)
-                .Select(c => c.Job.ResolvedId)
-                .FirstOrDefault() ?? string.Empty;
-            var version = LibraryVersions.For(library);
-            var capturedUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
-
-            // Pair each measured method with the markdown row BenchmarkDotNet rendered for it,
-            // so a later keyless run can reproduce the same table cells rather than inventing them.
-            var (header, rowsByMethod) = ExtractMarkdownRows(summaryList, library);
-
-            var entries = new Dictionary<string, LibrarySnapshot.SnapshotEntry>();
-            foreach (var r in measured)
-            {
-                entries[r.Method] = new LibrarySnapshot.SnapshotEntry
-                {
-                    Version = version,
-                    CapturedUtc = capturedUtc,
-                    Host = host,
-                    Job = job,
-                    TimeMs = r.TimeMs,
-                    AllocMb = r.AllocMb,
-                    ErrorMs = r.ErrorMs,
-                    StdDevMs = r.StdDevMs,
-                    TableHeader = header,
-                    TableRow = rowsByMethod.GetValueOrDefault(r.Method),
-                };
-            }
-
-            LibrarySnapshot.Merge(library, entries);
-        }
-
-        /// <summary>
-        /// Pulls a library's rendered markdown rows out of the generated GitHub reports, keyed by
-        /// method, along with the header they belong to.
-        /// </summary>
-        private static (string? Header, Dictionary<string, string> RowsByMethod) ExtractMarkdownRows(
-            IEnumerable<Summary> summaries, string library)
-        {
-            var rowsByMethod = new Dictionary<string, string>();
-            string? header = null;
-
-            var resultsDir = summaries.Select(s => s.ResultsDirectoryPath).FirstOrDefault(Directory.Exists);
-            if (resultsDir is null) return (null, rowsByMethod);
-
-            foreach (var file in Directory.GetFiles(resultsDir, "*-report-github.md").OrderBy(f => f))
-            {
-                var lines = File.ReadAllText(file).Replace("\r\n", "\n").Split('\n');
-                var headerIdx = Array.FindIndex(lines, l =>
-                {
-                    var t = l.TrimStart();
-                    return t.StartsWith('|') && l.Contains("Method") && l.Contains("Mean");
-                });
-                if (headerIdx < 0) continue;
-
-                var headers = SplitRow(lines[headerIdx]);
-                var libraryCol = Array.FindIndex(headers, c => c.Equals("Library", StringComparison.OrdinalIgnoreCase));
-                var methodCol = Array.FindIndex(headers, c => c.Equals("Method", StringComparison.OrdinalIgnoreCase));
-                if (libraryCol < 0 || methodCol < 0) continue;
-
-                header ??= lines[headerIdx];
-                for (var i = headerIdx + 2; i < lines.Length && lines[i].TrimStart().StartsWith('|'); i++)
-                {
-                    var cells = SplitRow(lines[i]);
-                    if (cells.ElementAtOrDefault(libraryCol) == library &&
-                        cells.ElementAtOrDefault(methodCol) is { Length: > 0 } method)
-                    {
-                        rowsByMethod[method] = lines[i];
-                    }
-                }
-            }
-
-            return (header, rowsByMethod);
-        }
-
         // ---- Library versions --------------------------------------------------------
 
         private static string BuildVersionsTable()
@@ -514,11 +440,6 @@ namespace XLBench
         /// Explains the <c>⧗</c> marker whenever any published number was replayed from
         /// <c>snapshots/</c> instead of measured in this run.
         /// </summary>
-        private static string HostOf(IEnumerable<Summary> summaries) =>
-            summaries
-                .Select(s => $"{s.HostEnvironmentInfo.Os.Value}, {s.HostEnvironmentInfo.Cpu.Value?.ProcessorName}")
-                .FirstOrDefault() ?? string.Empty;
-
         private static string BuildSnapshotNotice(IReadOnlyList<Scenario> scenarios, string currentHost)
         {
             var libraries = scenarios
@@ -578,7 +499,7 @@ namespace XLBench
 
             var headerLine = lines[headerIdx];
             var delimLine = lines[headerIdx + 1];
-            var headers = SplitRow(headerLine);
+            var headers = SnapshotRecorder.SplitRow(headerLine);
             var methodCol = Array.FindIndex(headers, c => c.Equals("Method", StringComparison.OrdinalIgnoreCase));
             var meanCol = Array.FindIndex(headers, c => c.Equals("Mean", StringComparison.OrdinalIgnoreCase));
             var libraryCol = Array.FindIndex(headers, c => c.Equals("Library", StringComparison.OrdinalIgnoreCase));
@@ -592,7 +513,7 @@ namespace XLBench
             var preamble = string.Join("\n", lines.Take(headerIdx)).TrimEnd('\n');
 
             var byMethod = dataRows
-                .GroupBy(r => SplitRow(r).ElementAtOrDefault(methodCol) ?? string.Empty)
+                .GroupBy(r => SnapshotRecorder.SplitRow(r).ElementAtOrDefault(methodCol) ?? string.Empty)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // Replay any snapshotted rows for libraries that could not run (see LibrarySnapshot).
@@ -619,8 +540,8 @@ namespace XLBench
                 }
                 row = projected;
 
-                var liveUnit = UnitOf(SplitRow(list[0]).ElementAtOrDefault(meanCol));
-                var snapshotUnit = UnitOf(SplitRow(row).ElementAtOrDefault(meanCol));
+                var liveUnit = UnitOf(SnapshotRecorder.SplitRow(list[0]).ElementAtOrDefault(meanCol));
+                var snapshotUnit = UnitOf(SnapshotRecorder.SplitRow(row).ElementAtOrDefault(meanCol));
                 if (meanCol >= 0 && liveUnit is not null && snapshotUnit is not null && liveUnit != snapshotUnit)
                 {
                     Console.WriteLine(
@@ -644,7 +565,7 @@ namespace XLBench
                 var label = MethodLabels.FirstOrDefault(m => m.Key == key).Label ?? key;
                 var rows = byMethod[key];
                 if (meanCol >= 0)
-                    rows = rows.OrderBy(r => ParseLeadingNumber(SplitRow(r).ElementAtOrDefault(meanCol))).ToList();
+                    rows = rows.OrderBy(r => ParseLeadingNumber(SnapshotRecorder.SplitRow(r).ElementAtOrDefault(meanCol))).ToList();
 
                 sb.AppendLine($"### {label}").AppendLine();
                 sb.AppendLine(headerLine);
@@ -655,9 +576,6 @@ namespace XLBench
             return sb.ToString();
         }
 
-        private static string[] SplitRow(string line) =>
-            line.Trim().Trim('|').Split('|').Select(c => c.Trim()).ToArray();
-
         /// <summary>
         /// Re-orders a snapshotted row to match <paramref name="targetHeaders"/>, matching cells by
         /// header name. Columns the snapshot captured but this run does not render (typically
@@ -667,8 +585,8 @@ namespace XLBench
         /// </summary>
         private static string? ProjectOntoColumns(string row, string storedHeader, string[] targetHeaders)
         {
-            var storedHeaders = SplitRow(storedHeader);
-            var storedCells = SplitRow(row);
+            var storedHeaders = SnapshotRecorder.SplitRow(storedHeader);
+            var storedCells = SnapshotRecorder.SplitRow(row);
 
             var projected = new string[targetHeaders.Length];
             for (var i = 0; i < targetHeaders.Length; i++)
@@ -688,7 +606,7 @@ namespace XLBench
         /// </summary>
         private static string MarkSnapshotRow(string row, int libraryCol)
         {
-            var cells = SplitRow(row);
+            var cells = SnapshotRecorder.SplitRow(row);
             if (libraryCol < 0 || libraryCol >= cells.Length)
                 return row;
 

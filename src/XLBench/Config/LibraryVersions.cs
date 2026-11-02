@@ -30,11 +30,6 @@ public static class LibraryVersions
         if (Libraries.TelerikLicense.IsLicensed)
             libraries.Add(("Telerik", VersionOf(typeof(Telerik.Documents.Spreadsheet.Model.Workbook))));
 
-        // IronXL is referenced but only runs with a licence key; listing it as "under test"
-        // when its benchmarks were filtered out would misreport the published results.
-        if (Libraries.IronXlLicense.KeyAvailable)
-            libraries.Add(("IronXL", VersionOf(typeof(IronXL.WorkBook))));
-
         return libraries;
     }
 

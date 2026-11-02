@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if !XLBENCH_IRONXL
 using ClosedXML.Excel;
+#endif
 
 namespace XLBench.Data;
 
@@ -132,7 +134,11 @@ public static class EditData
     /// <summary>Total the last surviving row must show — the cell every benchmark reads back.</summary>
     public static double ExpectedLastTotal => ExpectedTotal(SurvivingRowCount - 1);
 
+#if XLBENCH_IRONXL
+    private static readonly Lazy<byte[]> LazyEditXlsx = new(() => PregeneratedInputs.Load("edit"), isThreadSafe: true);
+#else
     private static readonly Lazy<byte[]> LazyEditXlsx = new(BuildEditXlsx, isThreadSafe: true);
+#endif
 
     /// <summary>Canonical .xlsx bytes every <c>EditAndRecalculate</c> benchmark opens.</summary>
     public static byte[] EditXlsx => LazyEditXlsx.Value;
@@ -206,6 +212,7 @@ public static class EditData
             : throw new InvalidOperationException($"'{ResourceName}' contains no data rows.");
     }
 
+#if !XLBENCH_IRONXL
     private static byte[] BuildEditXlsx()
     {
         using var workbook = new XLWorkbook();
@@ -232,4 +239,5 @@ public static class EditData
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+#endif
 }

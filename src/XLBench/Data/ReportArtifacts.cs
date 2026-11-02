@@ -29,17 +29,7 @@ public static class ReportArtifacts
             ("XLibur", XLiburReportBenchmarks.WriteArtifact),
             ("OfficeIMO", OfficeImoReportBenchmarks.WriteArtifact),
             ("Telerik", TelerikReportBenchmarks.WriteArtifact),
-            ("IronXL", IronXlReportBenchmarks.WriteArtifact),
         ];
-
-        // IronXL throws rather than watermarking when unlicensed, and its "free for 7 days"
-        // development grace cannot be satisfied on .NET 10 (see IronXlLicense). Skipping it
-        // with one line beats a stack trace in the middle of an otherwise clean run.
-        if (!IronXlLicense.KeyAvailable)
-        {
-            writers = [.. writers.Where(w => w.Library != "IronXL")];
-            Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
-        }
 
         // Telerik watermarks its output when unlicensed, which would make the artifact
         // misleading rather than absent (see TelerikLicense).

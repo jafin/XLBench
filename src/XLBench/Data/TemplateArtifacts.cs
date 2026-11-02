@@ -76,15 +76,7 @@ public static class TemplateArtifacts
             ("XLibur", "xlibur", XLiburTemplateBenchmarks.WriteArtifact),
             ("OfficeIMO", "officeimo", OfficeImoTemplateBenchmarks.WriteArtifact),
             ("Telerik", "telerik", TelerikTemplateBenchmarks.WriteArtifact),
-            ("IronXL", "ironxl", IronXlTemplateBenchmarks.WriteArtifact),
         ];
-
-        // IronXL throws rather than watermarking when unlicensed (see IronXlLicense).
-        if (!IronXlLicense.KeyAvailable)
-        {
-            writers = [.. writers.Where(w => w.Library != "IronXL")];
-            Console.WriteLine("[XLBench] Skipping IronXL — XLBENCH_IRONXL_KEY not set (see README).");
-        }
 
         // Telerik watermarks its output when unlicensed (see TelerikLicense).
         if (!TelerikLicense.IsLicensed)

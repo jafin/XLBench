@@ -1,11 +1,11 @@
 ﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Checks nuget.org for newer versions of the packages referenced by src/XLBench, and
+    Checks nuget.org for newer versions of the packages referenced by src/XLBench and src/XLBench.IronXL, and
     optionally applies the bumps.
 
 .DESCRIPTION
-    Reads every PackageReference out of XLBench.csproj, asks the nuget.org flat container
+    Reads every PackageReference out of both project files, asks the nuget.org flat container
     for that package's version list, and reports the newest version each one could move to.
     Nothing is written unless -Apply is passed.
 
@@ -46,7 +46,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$csprojPath = Join-Path $repoRoot 'src/XLBench/XLBench.csproj'
+# IronXL lives in its own project because its dependencies cannot restore alongside ClosedXML's
+# (NU1107 on SixLabors.Fonts), so the library packages are spread across two projects.
+$csprojPaths = @(
+    Join-Path $repoRoot 'src/XLBench/XLBench.csproj'
+    Join-Path $repoRoot 'src/XLBench.IronXL/XLBench.IronXL.csproj'
+)
 
 # The libraries whose numbers are published. Everything else in the csproj is tooling.
 $librariesUnderTest = @(
@@ -150,12 +155,22 @@ function Get-NuGetVersions([string]$id) {
 
 # --- Read the current references ----------------------------------------------------------
 
-[xml]$csproj = Get-Content -Raw -LiteralPath $csprojPath
-$references = @($csproj.Project.ItemGroup.PackageReference |
-    Where-Object { $_.Include } |
-    ForEach-Object { [pscustomobject]@{ Id = $_.Include; Version = $_.Version } })
+$references = @(foreach ($path in $csprojPaths) {
+    [xml]$csproj = Get-Content -Raw -LiteralPath $path
+    $csproj.Project.ItemGroup.PackageReference |
+        Where-Object { $_.Include } |
+        ForEach-Object { [pscustomobject]@{ Id = $_.Include; Version = $_.Version; Project = $path } }
+})
 
-if (-not $references) { throw "No PackageReference entries found in $csprojPath." }
+# A package such as BenchmarkDotNet is referenced by both projects: check it once, update both.
+$projectsById = @{}
+foreach ($ref in $references) {
+    if (-not $projectsById.ContainsKey($ref.Id)) { $projectsById[$ref.Id] = @() }
+    $projectsById[$ref.Id] += $ref.Project
+}
+$references = @($references | Group-Object Id | ForEach-Object { $_.Group[0] })
+
+if (-not $references) { throw "No PackageReference entries found in $($csprojPaths -join ', ')." }
 
 if ($LibrariesOnly) {
     $references = @($references | Where-Object { $librariesUnderTest -contains $_.Id })
@@ -234,8 +249,10 @@ Push-Location $repoRoot
 try {
     foreach ($row in $outdated) {
         Write-Host "Updating $($row.Id): $($row.Current) -> $($row.Latest)" -ForegroundColor Cyan
-        dotnet add $csprojPath package $row.Id --version $row.Latest
-        if ($LASTEXITCODE -ne 0) { throw "dotnet add package failed for $($row.Id)." }
+        foreach ($project in $projectsById[$row.Id]) {
+            dotnet add $project package $row.Id --version $row.Latest
+            if ($LASTEXITCODE -ne 0) { throw "dotnet add package failed for $($row.Id) in $project." }
+        }
     }
 
     Write-Host ''
