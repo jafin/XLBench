@@ -20,7 +20,7 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- Transitive pin: overrides a vulnerable 10.0.7 pulled in by the Excel libraries. -->
-    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.14" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
   </ItemGroup>
 
   <!-- Excel libraries under test — all referenced via NuGet only. -->
