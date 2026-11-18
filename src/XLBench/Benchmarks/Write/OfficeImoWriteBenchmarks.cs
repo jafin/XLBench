@@ -15,23 +15,23 @@ public class OfficeImoWriteBenchmarks
     public void CreateAndSave()
     {
         using var doc = ExcelDocument.Create();
-        var ws = doc.AddWorksheet("Data");
+        var ws = doc.AddSheet("Data");
 
-        ws.CellValue(1, 1, "Name");
-        ws.CellValue(1, 2, "Amount");
-        ws.CellValue(1, 3, "Date");
+        ws.Cell(1, 1).SetValue("Name");
+        ws.Cell(1, 2).SetValue("Amount");
+        ws.Cell(1, 3).SetValue("Date");
 
         for (var i = 0; i < TestData.WriteRowCount; i++)
         {
             var row = i + 2;
-            ws.CellValue(row, 1, TestData.Strings[i]);
-            ws.CellValue(row, 2, TestData.Numbers[i]);
-            ws.CellValue(row, 3, TestData.Dates[i]);
+            ws.Cell(row, 1).SetValue(TestData.Strings[i]);
+            ws.Cell(row, 2).SetValue(TestData.Numbers[i]);
+            ws.Cell(row, 3).SetValue(TestData.Dates[i]);
         }
 
         var sumRow = TestData.WriteRowCount + 2;
-        ws.CellValue(sumRow, 1, "Total");
-        ws.CellFormula(sumRow, 2, $"SUM(B2:B{TestData.WriteRowCount + 1})");
+        ws.Cell(sumRow, 1).SetValue("Total");
+        ws.Cell(sumRow, 2).SetFormula($"SUM(B2:B{TestData.WriteRowCount + 1})");
 
         using var ms = new MemoryStream();
         doc.Save(ms);

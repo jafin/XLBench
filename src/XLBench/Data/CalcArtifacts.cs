@@ -52,8 +52,7 @@ public static class CalcArtifacts
             ("EPPlus", "epplus", EpPlusCalcBenchmarks.WriteArtifact),
             ("NPOI", "npoi", NpoiCalcBenchmarks.WriteArtifact),
             ("XLibur", "xlibur", XLiburCalcBenchmarks.WriteArtifact),
-            // Excluded, like its [Benchmark] — see OfficeImoCalcBenchmarks. Uncomment to re-check it.
-            // ("OfficeIMO", "officeimo", OfficeImoCalcBenchmarks.WriteArtifact),
+            ("OfficeIMO", "officeimo", OfficeImoCalcBenchmarks.WriteArtifact),
         ];
 
         var written = 0;

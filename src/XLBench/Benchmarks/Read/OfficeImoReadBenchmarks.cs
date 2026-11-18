@@ -33,8 +33,8 @@ public class OfficeImoReadBenchmarks
     {
         using var doc = ExcelDocument.Load(new MemoryStream(_propertiesBytes));
 
-        doc.BuiltinDocumentProperties.Title = PropertiesData.Title;
-        doc.BuiltinDocumentProperties.Category = PropertiesData.Category;
+        doc.Properties.Title = PropertiesData.Title;
+        doc.Properties.Category = PropertiesData.Category;
 
         using var output = new MemoryStream();
         doc.Save(output);
