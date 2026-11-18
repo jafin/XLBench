@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using OfficeIMO;
 using OfficeIMO.Drawing;
 using OfficeIMO.Excel;
 using XLBench.Data;
@@ -45,7 +46,7 @@ public class OfficeImoReportBenchmarks
     private static void Build(Stream output)
     {
         using var doc = ExcelDocument.Create();
-        var ws = doc.AddWorksheet(ReportLayout.SheetName);
+        var ws = doc.AddSheet(ReportLayout.SheetName);
 
         WriteData(ws);
         AddConditionalFormatting(ws);
@@ -56,28 +57,28 @@ public class OfficeImoReportBenchmarks
 
     private static void WriteData(ExcelSheet ws)
     {
-        ws.CellValue(ReportLayout.HeaderRow, ReportLayout.WeekNoCol, "Week");
-        ws.CellValue(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol, ReportLayout.WeekEndingHeader);
+        ws.Cell(ReportLayout.HeaderRow, ReportLayout.WeekNoCol).SetValue("Week");
+        ws.Cell(ReportLayout.HeaderRow, ReportLayout.WeekEndingCol).SetValue(ReportLayout.WeekEndingHeader);
         for (var s = 0; s < StockData.SymbolCount; s++)
-            ws.CellValue(ReportLayout.HeaderRow, ReportLayout.FirstPriceCol + s, StockData.Symbols[s]);
+            ws.Cell(ReportLayout.HeaderRow, ReportLayout.FirstPriceCol + s).SetValue(StockData.Symbols[s]);
 
         for (var col = ReportLayout.WeekNoCol; col <= ReportLayout.LastPriceCol; col++)
-            ws.CellBold(ReportLayout.HeaderRow, col);
+            ws.Cell(ReportLayout.HeaderRow, col).SetBold();
 
         for (var w = 0; w < StockData.WeekCount; w++)
         {
             var row = ReportLayout.FirstDataRow + w;
-            ws.CellValue(row, ReportLayout.WeekNoCol, w + 1);
+            ws.Cell(row, ReportLayout.WeekNoCol).SetValue(w + 1);
 
-            ws.CellValue(row, ReportLayout.WeekEndingCol, StockData.WeekEndings[w]);
-            ws.FormatCell(row, ReportLayout.WeekEndingCol, ReportLayout.DateFormat);
+            ws.Cell(row, ReportLayout.WeekEndingCol).SetValue(StockData.WeekEndings[w]);
+            ws.Cell(row, ReportLayout.WeekEndingCol).SetNumberFormat(ReportLayout.DateFormat);
 
             var prices = StockData.Prices[w];
             for (var s = 0; s < prices.Length; s++)
             {
                 var col = ReportLayout.FirstPriceCol + s;
-                ws.CellValue(row, col, prices[s]);
-                ws.FormatCell(row, col, ReportLayout.PriceFormat);
+                ws.Cell(row, col).SetValue(prices[s]);
+                ws.Cell(row, col).SetNumberFormat(ReportLayout.PriceFormat);
             }
         }
 
@@ -118,14 +119,14 @@ public class OfficeImoReportBenchmarks
             seriesCount: StockData.SymbolCount,
             hasHeaderRow: true);
 
-        var chart = ws.AddChart(
-            data,
-            row: ReportLayout.ChartFirstRow,
-            column: ReportLayout.ChartFirstCol,
-            widthPixels: ReportLayout.ChartColSpan * DefaultColumnWidthPx,
-            heightPixels: ReportLayout.ChartRowSpan * DefaultRowHeightPx,
-            type: ExcelChartType.Line,
-            title: ReportLayout.ChartTitle);
+        var chart = ws.AddChart(OfficeChartType.Line, data, new ExcelChartOptions
+        {
+            Row = ReportLayout.ChartFirstRow,
+            Column = ReportLayout.ChartFirstCol,
+            Width = OfficeLength.Pixels(ReportLayout.ChartColSpan * DefaultColumnWidthPx),
+            Height = OfficeLength.Pixels(ReportLayout.ChartRowSpan * DefaultRowHeightPx),
+            Title = ReportLayout.ChartTitle,
+        });
 
         chart.SetLegend(OfficeChartLegendPosition.Right);
     }

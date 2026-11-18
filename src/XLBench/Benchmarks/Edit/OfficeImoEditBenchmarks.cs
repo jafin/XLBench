@@ -52,7 +52,7 @@ public class OfficeImoEditBenchmarks
             ws.DeleteRows(EditData.RowsToDelete[i]);
 
         for (var row = EditData.FirstDataRow; row <= EditData.LastRowAfterEdit; row++)
-            ws.CellValue(row, 1, EditData.ColumnAValue);
+            ws.Cell(row, 1).SetValue(EditData.ColumnAValue);
 
         doc.Calculate();
 

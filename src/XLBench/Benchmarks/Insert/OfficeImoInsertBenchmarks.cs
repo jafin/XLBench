@@ -52,7 +52,7 @@ public class OfficeImoInsertBenchmarks
 
         for (var row = InsertData.FirstDataRow; row <= InsertData.LastDataRow; row++)
         for (var col = InsertData.InsertAtColumn; col < InsertData.AfterInsertedColumn; col++)
-            ws.CellValue(row, col, InsertData.InsertedValue);
+            ws.Cell(row, col).SetValue(InsertData.InsertedValue);
 
         doc.Calculate();
 
