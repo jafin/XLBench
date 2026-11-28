@@ -29,7 +29,7 @@ libraries, run on **.NET 10** with
 | [MiniExcel](https://github.com/mini-software/MiniExcel) | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel) | 1.46.0 |
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel) | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel) | 0.5.8 |
 | [XLibur](https://github.com/XLibur/XLibur) | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle) | 0.800.0 |
-| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.5.3 |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO) | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel) | 3.6.2 |
 | [IronXL](https://ironsoftware.com/csharp/excel/) | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel) | 2026.11.1 |
 | [Telerik](https://www.telerik.com/document-processing-libraries) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) | 2026.3.1027 |
 
@@ -138,7 +138,7 @@ All 500 row totals in every saved artifact are checked against the source CSV on
 | MiniExcel | ❌ | ❌ | ❌ (not benchmarked — no engine) |
 | Sylvan | ❌ | ❌ | ❌ (not benchmarked — no engine) |
 | XLibur | ✅ | ✅ | ✅ |
-| OfficeIMO | ⚠️ `INDEX` on error | ✅ | ❌ (not benchmarked — wrong results, ~20 s and ~45 GB per operation) |
+| OfficeIMO | ✅ | ✅ | ✅ |
 | IronXL | ? | ? | not yet verified |
 | Telerik | ❌ no `IFERROR` | ❌ | ❌ (not benchmarked) |
 
@@ -155,7 +155,7 @@ The data is the same in every saved file; what differs is how much of the templa
 | MiniExcel | ❌ | ❌ (not benchmarked — `{{tag}}` templates only) |
 | Sylvan | ❌ | ❌ (not benchmarked) |
 | XLibur | ✅ | ✅ all |
-| OfficeIMO | ✅ | ⚠️ currency format lost on new rows |
+| OfficeIMO | ✅ | ✅ all |
 | IronXL | ⚠️ no table resize | not yet run |
 | Telerik | ❌ table dropped | ❌ structured refs become text |
 

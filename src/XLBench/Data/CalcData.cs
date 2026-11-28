@@ -85,8 +85,6 @@ public static class CalcData
     /// ClosedXML, EPPlus, NPOI and XLibur each take about a second per operation at 1,000 orders
     /// and two to four seconds at 5,000. Every order still costs the same lookups and every summary
     /// cell still scans every order, so the size changes the totals, not the shape of the work.
-    /// OfficeIMO, the engine that originally set this size, is excluded from the scenario — see
-    /// the README's Calc capability matrix.
     /// </remarks>
     public const int OrderCount = 1_000;
 

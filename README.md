@@ -19,7 +19,7 @@ Libraries are installed from NuGet and tested on **.NET 10** using [BenchmarkDot
 | [MiniExcel](https://github.com/mini-software/MiniExcel)                                | [`MiniExcel`](https://www.nuget.org/packages/MiniExcel)                                                                                                                                                              | 1.46.0     | Streaming, POCO/dynamic focused                                                                | [Apache-2.0](https://licenses.nuget.org/Apache-2.0)                                                    |
 | [Sylvan](https://github.com/MarkPflug/Sylvan.Data.Excel)                               | [`Sylvan.Data.Excel`](https://www.nuget.org/packages/Sylvan.Data.Excel)                                                                                                                                              | 0.5.8      | Streaming `DbDataReader` / `DbDataWriter`                                                      | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [XLibur](https://github.com/XLibur/XLibur)                                             | [`XLibur.Bundle`](https://www.nuget.org/packages/XLibur.Bundle)                                                                                                                                                      | 0.800.0    | Includes and registers the SkiaSharp font engine                                               | [MIT](https://licenses.nuget.org/MIT)                                                                  |
-| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO)                                     | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel)                                                                                                                                                  | 3.5.3      | Built on the OpenXML SDK; own lightweight formula engine                                       | [MIT](https://licenses.nuget.org/MIT)                                                                  |
+| [OfficeIMO](https://github.com/EvotecIT/OfficeIMO)                                     | [`OfficeIMO.Excel`](https://www.nuget.org/packages/OfficeIMO.Excel)                                                                                                                                                  | 3.6.2      | Built on the OpenXML SDK; own lightweight formula engine                                       | [MIT](https://licenses.nuget.org/MIT)                                                                  |
 | [IronXL](https://ironsoftware.com/csharp/excel/)                                       | [`IronXL.Excel`](https://www.nuget.org/packages/IronXL.Excel)                                                                                                                                                        | 2026.11.1  | **Commercial.** Requires a licence key. Without one, saved benchmark results are used instead. | [Proprietary EULA](https://ironsoftware.com/csharp/excel/licensing/)                                   |
 | [Telerik](https://www.telerik.com/document-processing-libraries) (RadSpreadProcessing) | [`Telerik.Documents.Spreadsheet`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet) + [`.FormatProviders.OpenXml`](https://www.nuget.org/packages/Telerik.Documents.Spreadsheet.FormatProviders.OpenXml) | 2026.3.1027 | **Commercial.** Unlicensed workbooks get a licence worksheet instead of failing.               | [Proprietary EULA](https://www.telerik.com/purchase/license-agreement/document-processing-libraries) ᶜ |
 
@@ -337,7 +337,7 @@ Older versions also produced invalid chart series XML, but those issues have sin
 
 ### OfficeIMO
 
-OfficeIMO's conditional-format helpers (`AddConditionalFormulaRule`) only take a fill colour. The benchmark passes an `ExcelConditionalFormattingInfo` to `AddConditionalFormattingRule` instead, so each rule gets both the fill and the font colour.
+OfficeIMO's conditional-format builder (`ConditionalFormat().Formula(...)`) only takes a fill colour. The benchmark passes an `ExcelConditionalFormattingInfo` to `AddConditionalFormattingRule` instead, so each rule gets both the fill and the font colour.
 
 The chart is bound to the sheet with `ExcelChartDataRange`. Like Telerik, OfficeIMO sizes charts in pixels, so the benchmark converts the shared chart size into pixels.
 
@@ -530,7 +530,7 @@ Sylvan.Data.Excel cannot edit an existing workbook either, so it is excluded.
 | MiniExcel   |           ❌          |           ❌           | — not benchmarked   |
 | Sylvan      |           ❌          |           ❌           | — not benchmarked   |
 | XLibur      |           ✅          |           ✅           |          ✅          |
-| OfficeIMO   | ⚠️ `INDEX` on error  |           ✅           | — excluded          |
+| OfficeIMO   |           ✅          |           ✅           |          ✅          |
 | IronXL      |           ?          |           ?           |   not yet verified  |
 | Telerik     |    ❌ no `IFERROR`    |           ❌           | — not benchmarked   |
 
@@ -540,15 +540,7 @@ None of these has a calculation engine. The Edit scenario calculates totals in t
 
 ### OfficeIMO
 
-OfficeIMO is excluded from this scenario for three reasons:
-
-* **Errors.** When `INDEX` receives an error, such as the `#N/A` from a `MATCH` that found nothing, OfficeIMO leaves the cell uncalculated instead of returning the error. `IFERROR` then has nothing to catch. The unknown-product orders get no category, and every `SUMIFS` and `COUNTIFS` that reads that column is left uncalculated too. 56 of the 2,048 results are missing, including the grand total.
-* **Speed.** One operation takes about 20 seconds, against about one second for the other engines.
-* **Memory.** One operation allocates about 45 GB.
-
-Each function in the workbook works on its own. The failure comes from how errors move between them.
-
-The benchmark code is kept in `Benchmarks/Calc/OfficeImoCalcBenchmarks.cs` with its `[Benchmark]` attribute commented out. To re-check OfficeIMO after a version bump, restore the attribute and its entry in `Data/CalcArtifacts.cs`.
+`ExcelDocument.Calculate()` uses OfficeIMO's own formula engine. Up to 3.5.3, an error passed to `INDEX`, such as the `#N/A` from a `MATCH` that found nothing, left the cell uncalculated, so `IFERROR` had nothing to catch and 56 of the 2,048 results were missing. Since 3.6.0 the error reaches `IFERROR`, and all 2,048 results match.
 
 ### Telerik
 
@@ -571,7 +563,7 @@ As in the Insert scenario, the artifact is saved with `evaluateFormulae: true` s
 | MiniExcel   |          —          |       —       |           —          |           —          |          —         | — not benchmarked   |
 | Sylvan      |          —          |       —       |           —          |           —          |          —         | — not benchmarked   |
 | XLibur      |          ✅          |       ✅       |           ✅          |           ✅          |          ✅         |          0          |
-| OfficeIMO   |          ✅          |       ✅       |           ✅          |           ✅          |    ⚠️ dates only   |          0          |
+| OfficeIMO   |          ✅          |       ✅       |           ✅          |           ✅          |          ✅         |          0          |
 | IronXL      | ⚠️ no table resize  |       ?       |           ?          |           ?          |          ?         |          ?          |
 | Telerik     |  ❌ table dropped    |       ✅       |           ✅          |    ❌ become text     |          ✅         |          1          |
 
@@ -600,9 +592,7 @@ The title comes back as `<a:rich>` instead of `<c:rich>`. This is the same bug a
 
 ### OfficeIMO
 
-New cells do not take their column's style.
-
-Dates still show as dates, because OfficeIMO applies its own date format. Prices and amounts lose the template's currency format.
+New rows keep the template's date and currency formats.
 
 ### Telerik
 
