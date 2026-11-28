@@ -5,6 +5,42 @@ Significant performance swings between published full-fidelity runs. A swing is 
 as caused by a version bump only when it is larger than the drift seen in libraries whose version
 did not change in the same run.
 
+## 2026-11-28 — Publish OfficeIMO 3.6.2, MiniExcel 2.0.0, XLibur 0.900.0, EPPlus 8.7.3, Telerik 2026.4.1127
+
+The versions were bumped in #63 and #67 without a full-fidelity run. This run publishes them.
+
+**Versions:** OfficeIMO 3.5.3 → 3.6.2, MiniExcel 1.46.0 → 2.0.0, XLibur 0.800.0 → 0.900.0,
+EPPlus 8.7.2 → 8.7.3, Telerik 2026.3.1027 → 2026.4.1127. Held back: none.
+**Not measured:** IronXL is replayed from the 2026.8.1 snapshot (no licence key). The pinned
+version is 2026.11.1.
+**Environment:** .NET runtime 10.0.14 → 10.0.15 and SDK 10.0.403 → 10.0.404, same host.
+
+### Significant swings
+
+| Scenario | Library | Version | Time | Allocated |
+| --- | --- | --- | --- | --- |
+| OpenAmendPropertiesAndSave | OfficeIMO | 3.5.3 → 3.6.2 | 24.72 → 0.35 ms (−99%) | 7.01 → 0.47 MB (−93%) |
+| OpenAndReadAll | OfficeIMO | 3.5.3 → 3.6.2 | 3039.47 → 135.63 ms (−96%) | 822.85 → 49.67 MB (−94%) |
+| OpenAndReadAllSheets | OfficeIMO | 3.5.3 → 3.6.2 | 1166.46 → 50.99 ms (−96%) | 509.39 → 12.03 MB (−98%) |
+| CreateAndSave | OfficeIMO | 3.5.3 → 3.6.2 | 1034.28 → 19.84 ms (−98%) | 406.69 → 9.38 MB (−98%) |
+| CreateStockReport | OfficeIMO | 3.5.3 → 3.6.2 | 208.36 → 3.80 ms (−98%) | 905.82 → 2.92 MB (−100%) |
+| EditAndRecalculate | OfficeIMO | 3.5.3 → 3.6.2 | 2734.66 → 6.62 ms (−100%) | 494.08 → 3.63 MB (−99%) |
+| InsertColumnsAndRecalculate | OfficeIMO | 3.5.3 → 3.6.2 | 149.61 → 7.76 ms (−95%) | 70.13 → 3.48 MB (−95%) |
+| FillTemplateAndSave | OfficeIMO | 3.5.3 → 3.6.2 | 82.62 → 15.46 ms (−81%) | 31.34 → 6.49 MB (−79%) |
+| OpenAndReadAll | MiniExcel | 1.46.0 → 2.0.0 | 696.43 → 558.19 ms (−20%) | 806.67 → 221.18 MB (−73%) |
+| OpenAndReadAllSheets | MiniExcel | 1.46.0 → 2.0.0 | 1333.84 → 1200.06 ms (−10%) | 1081.32 → 499.72 MB (−54%) |
+
+The OfficeIMO rows also reflect #63. That PR rewrote OfficeIMO's adapters for the 3.6 cell-handle
+API (`Cell(row, col).SetValue`, `Properties`, `AddSheet`, `ExcelChartOptions`). Each row measures the
+3.6.2 library together with its new API, not the library alone. OfficeIMO is back in
+ChangePricesAndRecalculate for the first time since its exclusion: 36.11 ms and 15.25 MB, the fastest
+engine there. That row has no previous result to compare.
+
+The largest drift in unchanged libraries was −6.0% in time (OpenXML SDK, InsertColumnsAndRecalculate).
+Allocation in unchanged libraries moved by at most 3.2%. The OfficeIMO and MiniExcel swings are well
+beyond that drift. The XLibur, EPPlus and Telerik bumps moved time by at most 6.6% (XLibur,
+InsertColumnsAndRecalculate) and allocation by at most 0.8%, which is within drift.
+
 ## 2026-11-02 — XLibur 0.800.0
 
 **Versions:** XLibur 0.730.0 → 0.800.0. IronXL is pinned at 2026.11.1 in its new project (see #54); it is
